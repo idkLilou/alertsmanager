@@ -24,7 +24,7 @@
  * -------------------------------------------------------------------------
  * @copyright Copyright (C) 2024-2026 by Alerts Manager plugin team.
  * @license   GPLv2 https://www.gnu.org/licenses/gpl-2.0.html
- * @link      https://github.com/pluginsGLPI/alertsmanager
+ * @link      https://github.com/idkLilou/alertsmanager
  * -------------------------------------------------------------------------
  */
 
