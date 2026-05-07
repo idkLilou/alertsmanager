@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="alertsmanager.png" alt="alertsmanager" width="400">
+	<img src="./public/pics/alertsmanager.png" alt="alertsmanager" width="400">
 </p>
 
 >[!NOTE]
