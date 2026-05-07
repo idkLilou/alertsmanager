@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in this project, please email security@example.com instead of using the issue tracker.
+If you discover a security vulnerability in this project, please email ldufau@cerfrance-adourocean.fr instead of using the issue tracker.
 
 Please include the following details:
 - Description of the vulnerability
