@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * -------------------------------------------------------------------------
+ * Alerts Manager plugin for GLPI
+ * -------------------------------------------------------------------------
+ *
+ * LICENSE
+ *
+ * This file is part of Alerts Manager.
+ *
+ * Alerts Manager is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Alerts Manager is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Alerts Manager. If not, see <http://www.gnu.org/licenses/>.
+ * -------------------------------------------------------------------------
+ * @copyright Copyright (C) 2024-2026 by Alerts Manager plugin team.
+ * @license   GPLv2 https://www.gnu.org/licenses/gpl-2.0.html
+ * @link      https://github.com/pluginsGLPI/alertsmanager
+ * -------------------------------------------------------------------------
+ */
+
+use Glpi\Event;
+
+Session::checkLoginUser();
+
+if (!isset($_GET['id'])) {
+    $_GET['id'] = '';
+}
+
+$alert = new PluginAlertsmanagerAlert();
+
+/**
+ * Save target relations (users/groups/profiles)
+ */
+function alertsmanager_save_targets(int $alertId, string $type, array $targets = []) {
+    /** @var DBmysql $DB */
+    global $DB;
+
+    // Normalize targets to integers
+    $targets = array_map('intval', $targets);
+
+    // Delete existing relations for this alert in all target tables
+    $tables = [
+        'glpi_plugin_alertsmanager_alert_users',
+        'glpi_plugin_alertsmanager_alert_groups',
+        'glpi_plugin_alertsmanager_alert_profiles',
+    ];
+    foreach ($tables as $t) {
+        $DB->query("DELETE FROM `$t` WHERE `plugin_alertsmanager_alerts_id` = '" . intval($alertId) . "'");
+    }
+
+    if (empty($targets)) {
+        return;
+    }
+
+    switch ($type) {
+        case 'User':
+            foreach ($targets as $u) {
+                $DB->query("INSERT INTO `glpi_plugin_alertsmanager_alert_users` (`plugin_alertsmanager_alerts_id`,`users_id`,`date_creation`) VALUES ('" . intval($alertId) . "', '" . intval($u) . "', '" . date('Y-m-d H:i:s') . "')");
+            }
+            break;
+        case 'Group':
+            foreach ($targets as $g) {
+                $DB->query("INSERT INTO `glpi_plugin_alertsmanager_alert_groups` (`plugin_alertsmanager_alerts_id`,`groups_id`,`date_creation`) VALUES ('" . intval($alertId) . "', '" . intval($g) . "', '" . date('Y-m-d H:i:s') . "')");
+            }
+            break;
+        case 'Profile':
+            foreach ($targets as $p) {
+                $DB->query("INSERT INTO `glpi_plugin_alertsmanager_alert_profiles` (`plugin_alertsmanager_alerts_id`,`profiles_id`,`date_creation`) VALUES ('" . intval($alertId) . "', '" . intval($p) . "', '" . date('Y-m-d H:i:s') . "')");
+            }
+            break;
+    }
+}
+
+if (isset($_POST['update'])) {
+    $alert->check($_POST['id'], UPDATE);
+    if ($alert->update($_POST)) {
+        Event::log(
+            $_POST['id'],
+            'PluginAlertsmanagerAlert',
+            4,
+            'admin',
+            sprintf(__s('%s updates an item', 'alertsmanager'), $_SESSION['glpiname']),
+        );
+        // Save targets relations
+        alertsmanager_save_targets((int) $_POST['id'], $_POST['target_type'] ?? '', $_POST['targets'] ?? []);
+    }
+    Html::back();
+} elseif (isset($_POST['add'])) {
+    $alert->check(-1, CREATE, $_POST);
+    if ($newID = $alert->add($_POST)) {
+        Event::log(
+            $newID,
+            'PluginAlertsmanagerAlert',
+            4,
+            'admin',
+            sprintf(__s('%1$s adds the item %2$s', 'alertsmanager'), $_SESSION['glpiname'], $_POST['name']),
+        );
+
+        // Save targets relations
+        alertsmanager_save_targets((int) $newID, $_POST['target_type'] ?? '', $_POST['targets'] ?? []);
+
+        if ($_SESSION['glpibackcreated']) {
+            Html::redirect($alert->getLinkURL());
+        }
+    }
+    Html::back();
+} elseif (isset($_POST['delete'])) {
+    $alert->check($_POST['id'], DELETE);
+    if ($alert->delete($_POST)) {
+        Event::log(
+            $_POST['id'],
+            'PluginAlertsmanagerAlert',
+            4,
+            'admin',
+            sprintf(__s('%s deletes an item', 'alertsmanager'), $_SESSION['glpiname']),
+        );
+    }
+    $alert->redirectToList();
+} elseif (isset($_POST['restore'])) {
+    $alert->check($_POST['id'], DELETE);
+    if ($alert->restore($_POST)) {
+        Event::log(
+            $_POST['id'],
+            'PluginAlertsmanagerAlert',
+            4,
+            'admin',
+            sprintf(__s('%s restores an item', 'alertsmanager'), $_SESSION['glpiname']),
+        );
+    }
+    Html::back();
+} elseif (isset($_POST['purge'])) {
+    $alert->check($_POST['id'], PURGE);
+    if ($alert->delete($_POST, true)) {
+        Event::log(
+            $_POST['id'],
+            'PluginAlertsmanagerAlert',
+            4,
+            'admin',
+            sprintf(__s('%s purges an item', 'alertsmanager'), $_SESSION['glpiname']),
+        );
+    }
+    $alert->redirectToList();
+}
+
+Html::header(
+    __s('Alertes mail', 'alertsmanager'),
+    $_SERVER['PHP_SELF'],
+    'tools',
+    'PluginAlertsmanagerAlert',
+);
+
+$alert->display(['id' => $_GET['id']]);
+
+Html::footer();
