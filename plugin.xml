@@ -1,0 +1,58 @@
+<root>
+   <name>Alerts Manager</name>
+   <key>alertsmanager</key>
+   <state>stable</state>
+   <logo>logo.png</logo>
+   <description>
+      <short>
+         <en>This plugin allows to create and manage alerts with email notifications in GLPI.</en>
+         <fr>Ce plugin permet de créer et gérer des alertes avec notifications par mail dans GLPI.</fr>
+      </short>
+      <long>
+         <en>
+This plugin allows to create and manage alerts with automatic email notifications.
+
+Features
+--------
+
+1. Create alerts with name and description.
+2. Configure email notifications (subject and content).
+3. Target specific users, groups, or profiles.
+4. Trigger alerts based on:
+   - Observed date fields (send X days/months before)
+   - Scheduled frequency (daily, weekly, etc.)
+5. Manage alert status (active/inactive).
+6. List, modify, and delete alerts.
+         </en>
+         <fr>
+Ce plugin permet de créer et gérer des alertes avec notifications par mail automatiques.
+
+Fonctionnalités
+---------------
+
+1. Création d'alertes avec nom et description.
+2. Configuration des notifications par mail (objet et contenu).
+3. Ciblage des utilisateurs, groupes ou profils.
+4. Déclenchement des alertes selon:
+   - Des champs de date observés (envoi X jours/mois avant)
+   - Une fréquence programmée (quotidienne, hebdomadaire, etc.)
+5. Gestion du statut des alertes (actif/inactif).
+6. Lister, modifier et supprimer des alertes.
+         </fr>
+      </long>
+   </description>
+   <homepage>https://github.com/idkLilou/alertsmanager</homepage>
+   <download>https://github.com/idkLilou/alertsmanager/releases</download>
+   <issues>https://github.com/idkLilou/alertsmanager/issues</issues>
+   <readme>https://github.com/idkLilou/alertsmanager/blob/main/README.md</readme>
+   <authors>
+      <author>Lilou DUFAU</author>
+   </authors>
+   <versions>
+      <version>
+         <num>1.0.0</num>
+         <compatibility>~11.0.0</compatibility>
+         <download_url>https://github.com/idkLilou/alertsmanager/archive/refs/heads/main.zip</download_url>
+      </version>
+   </versions>
+</root>
