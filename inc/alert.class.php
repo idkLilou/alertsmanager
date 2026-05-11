@@ -347,6 +347,13 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 
         error_log('[AlertsManager] Found ' . count($fields) . ' standard date fields');
 
+        // Add custom fields from plugin Fields
+        $customFields = self::getPluginFieldsDateFields();
+        $fields = array_merge($fields, $customFields);
+
+        error_log('[AlertsManager] Found ' . count($customFields) . ' custom date fields from plugin Fields');
+        error_log('[AlertsManager] Total: ' . count($fields) . ' date fields');
+
         ksort($fields, SORT_STRING);
 
         return array_values($fields);
@@ -407,5 +414,76 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         $value = preg_replace('/(?<!^)([A-Z])/', ' $1', $value) ?? $value;
 
         return ucwords(trim($value));
+    }
+
+    private static function getPluginFieldsDateFields(): array
+    {
+        /** @var DBmysql $DB */
+        global $DB;
+
+        $fields = [];
+        $dateTypes = ['date', 'datetime', 'timestamp'];
+
+        if (!class_exists('PluginFieldsContainer') || !class_exists('PluginFieldsField')) {
+            error_log('[AlertsManager] Plugin Fields classes are not available');
+
+            return $fields;
+        }
+
+        $containerObj = new PluginFieldsContainer();
+        $fieldObj = new PluginFieldsField();
+
+        try {
+            $containers = $containerObj->find(['is_active' => 1], 'name');
+
+            foreach ($containers as $container) {
+                $containerId = (int) ($container['id'] ?? 0);
+                $containerLabel = (string) ($container['label'] ?? '');
+                $itemtypes = (string) ($container['itemtypes'] ?? '');
+                $decodedItemtypes = $itemtypes !== '' ? PluginFieldsToolbox::decodeJSONItemtypes($itemtypes) : [];
+
+                if ($containerId <= 0) {
+                    continue;
+                }
+
+                if ($containerLabel === '') {
+                    $containerLabel = (string) ($container['name'] ?? '');
+                }
+
+                $fieldsIterator = $fieldObj->find([
+                    'plugin_fields_containers_id' => $containerId,
+                    'is_active' => 1,
+                ], 'ranking');
+
+                if ($decodedItemtypes === []) {
+                    continue;
+                }
+
+                foreach ($fieldsIterator as $row) {
+                    $fieldType = (string) ($row['type'] ?? '');
+                    $fieldName = (string) ($row['name'] ?? '');
+                    $fieldLabel = (string) ($row['label'] ?? '');
+
+                    if ($fieldName === '' || !in_array($fieldType, $dateTypes, true)) {
+                        continue;
+                    }
+
+                    $fieldId = 'plugin_fields_' . $containerId . '.' . $fieldName;
+                    $finalLabel = sprintf('%s - %s', $containerLabel, $fieldLabel !== '' ? $fieldLabel : $fieldName);
+
+                    if (!isset($fields[$fieldId])) {
+                        error_log('[AlertsManager] Added custom field: ' . $fieldId . ' => ' . $finalLabel . ' (' . implode(', ', $decodedItemtypes) . ')');
+                        $fields[$fieldId] = [
+                            'id'    => $fieldId,
+                            'label' => $finalLabel,
+                        ];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log('[AlertsManager] Error querying plugin Fields: ' . $e->getMessage());
+        }
+
+        return $fields;
     }
 }
