@@ -178,7 +178,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 
         $this->fields['_targets'] = $this->getTargetsForDisplay((int) ($this->fields['id'] ?? 0));
         $this->fields['target_type'] = $this->getTargetTypeForDisplay((int) ($this->fields['id'] ?? 0));
-        $this->fields['_available_fields'] = $this->getAvailableObservedFields();
+        $this->fields['_available_fields'] = self::getAvailableObservedFields();
 
         error_log('[AlertsManager] Fields loaded: _targets=' . count($this->fields['_targets']) . ', target_type=' . $this->fields['target_type'] . ', _available_fields=' . count($this->fields['_available_fields']));
 
@@ -265,21 +265,147 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return $targets;
     }
 
-    private function getAvailableObservedFields(): array
+    public static function getAvailableObservedFields(): array
     {
-        return [
-            ['id' => 'Ticket.due_date', 'label' => __('Ticket Due Date')],
-            ['id' => 'Ticket.date_creation', 'label' => __('Ticket Creation Date')],
-            ['id' => 'Ticket.date_mod', 'label' => __('Ticket Last Update')],
-            ['id' => 'Contract.begin_date', 'label' => __('Contract Begin Date')],
-            ['id' => 'Contract.end_date', 'label' => __('Contract End Date')],
-            ['id' => 'SoftwareLicense.expiration_date', 'label' => __('License Expiration Date')],
-            ['id' => 'SoftwareLicense.buy_date', 'label' => __('License Buy Date')],
-            ['id' => 'Computer.date_creation', 'label' => __('Computer Creation Date')],
-            ['id' => 'Printer.date_creation', 'label' => __('Printer Creation Date')],
-            ['id' => 'Monitor.date_creation', 'label' => __('Monitor Creation Date')],
-            ['id' => 'Project.begin_date', 'label' => __('Project Begin Date')],
-            ['id' => 'Project.end_date', 'label' => __('Project End Date')],
+        /** @var DBmysql $DB */
+        global $DB;
+
+        $fields = [];
+        $dateTypes = ['date', 'datetime', 'timestamp'];
+
+        error_log('[AlertsManager] getAvailableObservedFields() started');
+
+        $classesToCheck = [
+            'Ticket',
+            'Problem',
+            'Change',
+            'Contract',
+            'SoftwareLicense',
+            'Computer',
+            'Printer',
+            'Monitor',
+            'NetworkEquipment',
+            'Peripheral',
+            'Project',
+            'User',
+            'Group',
+            'Profile',
+            'Entity',
+            'Location',
+            'Supplier',
+            'Manufacturer',
+            'DeviceMemory',
+            'DeviceProcessor',
+            'DeviceFirmware',
         ];
+
+        foreach ($classesToCheck as $itemtype) {
+            if (!class_exists($itemtype)) {
+                error_log('[AlertsManager] Class not found: ' . $itemtype);
+                continue;
+            }
+
+            try {
+                $item = new $itemtype();
+                if (!method_exists($item, 'rawSearchOptions')) {
+                    error_log('[AlertsManager] No rawSearchOptions for: ' . $itemtype);
+                    continue;
+                }
+
+                $searchOptions = (array) $item->rawSearchOptions();
+                error_log('[AlertsManager] ' . $itemtype . ' has ' . count($searchOptions) . ' raw search options');
+                
+                foreach ($searchOptions as $option) {
+                    $datatype = (string) ($option['datatype'] ?? '');
+                    $field = (string) ($option['field'] ?? '');
+                    $name = trim((string) ($option['name'] ?? ''));
+
+                    if (!in_array($datatype, $dateTypes, true)) {
+                        continue;
+                    }
+
+                    if ($field === '' || $field === 'id') {
+                        continue;
+                    }
+
+                    $tableName = self::getItemtypeTableName($itemtype);
+                    $fieldId = ($tableName !== '' ? $tableName : $itemtype) . '.' . $field;
+
+                    if (!isset($fields[$fieldId])) {
+                        $fieldLabel = self::buildObservedFieldLabel($itemtype, $field, $name);
+                        error_log('[AlertsManager] Added field: ' . $fieldId . ' => ' . $fieldLabel);
+                        $fields[$fieldId] = [
+                            'id'    => $fieldId,
+                            'label' => $fieldLabel,
+                        ];
+                    }
+                }
+            } catch (\Throwable $e) {
+                error_log('[AlertsManager] Error processing ' . $itemtype . ': ' . $e->getMessage());
+            }
+        }
+
+        error_log('[AlertsManager] Found ' . count($fields) . ' standard date fields');
+
+        ksort($fields, SORT_STRING);
+
+        return array_values($fields);
+    }
+
+    private static function buildObservedFieldLabel(string $itemtype, string $field, string $name = ''): string
+    {
+        $typeLabel = self::getItemtypeLabel($itemtype);
+        $fieldLabel = $name !== '' ? $name : self::humanizeFieldName($field);
+
+        return sprintf('%s - %s', $typeLabel, $fieldLabel);
+    }
+
+    private static function getItemtypeTableName(string $itemtype): string
+    {
+        if ($itemtype === '' || !class_exists($itemtype)) {
+            return '';
+        }
+
+        try {
+            $item = new $itemtype();
+            if (method_exists($item, 'getTable')) {
+                $tableName = (string) $item->getTable();
+                if ($tableName !== '') {
+                    return $tableName;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fall back to an empty string below.
+        }
+
+        return '';
+    }
+
+    private static function getItemtypeLabel(string $itemtype): string
+    {
+        if ($itemtype === '') {
+            return __('Unknown');
+        }
+
+        if (class_exists($itemtype) && method_exists($itemtype, 'getTypeName')) {
+            try {
+                $label = call_user_func([$itemtype, 'getTypeName'], 1);
+                if (is_string($label) && $label !== '') {
+                    return $label;
+                }
+            } catch (\Throwable $e) {
+                // Fall back to a humanized label below.
+            }
+        }
+
+        return self::humanizeFieldName($itemtype);
+    }
+
+    private static function humanizeFieldName(string $value): string
+    {
+        $value = str_replace(['_', '-'], ' ', $value);
+        $value = preg_replace('/(?<!^)([A-Z])/', ' $1', $value) ?? $value;
+
+        return ucwords(trim($value));
     }
 }
