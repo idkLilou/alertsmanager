@@ -55,27 +55,43 @@ function alertsmanager_save_targets(int $alertId, string $type, array $targets =
         'glpi_plugin_alertsmanager_alert_profiles',
     ];
     foreach ($tables as $t) {
-        $DB->query("DELETE FROM `$t` WHERE `plugin_alertsmanager_alerts_id` = '" . intval($alertId) . "'");
+        $DB->delete($t, [
+            'plugin_alertsmanager_alerts_id' => $alertId,
+        ]);
     }
 
     if (empty($targets)) {
         return;
     }
 
+    $now = date('Y-m-d H:i:s');
+
     switch ($type) {
         case 'User':
             foreach ($targets as $u) {
-                $DB->query("INSERT INTO `glpi_plugin_alertsmanager_alert_users` (`plugin_alertsmanager_alerts_id`,`users_id`,`date_creation`) VALUES ('" . intval($alertId) . "', '" . intval($u) . "', '" . date('Y-m-d H:i:s') . "')");
+                $DB->insert('glpi_plugin_alertsmanager_alert_users', [
+                    'plugin_alertsmanager_alerts_id' => $alertId,
+                    'users_id'                        => $u,
+                    'date_creation'                   => $now,
+                ]);
             }
             break;
         case 'Group':
             foreach ($targets as $g) {
-                $DB->query("INSERT INTO `glpi_plugin_alertsmanager_alert_groups` (`plugin_alertsmanager_alerts_id`,`groups_id`,`date_creation`) VALUES ('" . intval($alertId) . "', '" . intval($g) . "', '" . date('Y-m-d H:i:s') . "')");
+                $DB->insert('glpi_plugin_alertsmanager_alert_groups', [
+                    'plugin_alertsmanager_alerts_id' => $alertId,
+                    'groups_id'                      => $g,
+                    'date_creation'                  => $now,
+                ]);
             }
             break;
         case 'Profile':
             foreach ($targets as $p) {
-                $DB->query("INSERT INTO `glpi_plugin_alertsmanager_alert_profiles` (`plugin_alertsmanager_alerts_id`,`profiles_id`,`date_creation`) VALUES ('" . intval($alertId) . "', '" . intval($p) . "', '" . date('Y-m-d H:i:s') . "')");
+                $DB->insert('glpi_plugin_alertsmanager_alert_profiles', [
+                    'plugin_alertsmanager_alerts_id' => $alertId,
+                    'profiles_id'                    => $p,
+                    'date_creation'                  => $now,
+                ]);
             }
             break;
     }
