@@ -129,6 +129,11 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                 return;
             }
 
+            const selectedTargetIds = (targetsSelect.dataset.selectedTargets || '')
+                .split(',')
+                .map(value => value.trim())
+                .filter(value => value !== '');
+
             targetsSelect.innerHTML = '';
 
             if (!targetType) {
@@ -155,6 +160,9 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                     const optionEl = document.createElement('option');
                     optionEl.value = item.id;
                     optionEl.textContent = item.label;
+                    if (selectedTargetIds.includes(String(item.id))) {
+                        optionEl.selected = true;
+                    }
                     targetsSelect.appendChild(optionEl);
                 });
             } catch (e) {

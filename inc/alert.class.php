@@ -78,7 +78,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
     public function defineTabs($options = [])
     {
         $ong = [];
-        $this->addDefaultFormTabs($ong);
+        $this->addDefaultFormTab($ong);
         return $ong;
     }
 
@@ -176,7 +176,15 @@ class PluginAlertsmanagerAlert extends CommonDBTM
             $this->getEmpty();
         }
 
+        $trigger = $this->getTriggerForDisplay((int) ($this->fields['id'] ?? 0));
+        if (!empty($trigger)) {
+            $this->fields = array_merge($this->fields, $trigger);
+        }
+
         $this->fields['_targets'] = $this->getTargetsForDisplay((int) ($this->fields['id'] ?? 0));
+        $this->fields['_target_ids'] = array_map(static function (array $target): int {
+            return (int) ($target['id'] ?? 0);
+        }, $this->fields['_targets']);
         $this->fields['target_type'] = $this->getTargetTypeForDisplay((int) ($this->fields['id'] ?? 0));
         $this->fields['_available_fields'] = self::getAvailableObservedFields();
 
@@ -188,6 +196,48 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         ]);
 
         return true;
+    }
+
+    private function getTriggerForDisplay(int $alertId): array
+    {
+        if ($alertId <= 0) {
+            return [];
+        }
+
+        /** @var DBmysql $DB */
+        global $DB;
+
+        $res = $DB->request([
+            'SELECT' => [
+                'trigger_type',
+                'observed_field',
+                'observed_itemtype',
+                'trigger_days_before',
+                'trigger_months_before',
+                'frequency',
+                'frequency_hour',
+                'frequency_minute',
+            ],
+            'FROM'   => 'glpi_plugin_alertsmanager_alert_triggers',
+            'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+            'ORDER'  => ['id'],
+            'LIMIT'  => 1,
+        ]);
+
+        foreach ($res as $row) {
+            return [
+                'trigger_type'          => $row['trigger_type'] ?? '',
+                'observed_field'        => $row['observed_field'] ?? '',
+                'observed_itemtype'     => $row['observed_itemtype'] ?? '',
+                'trigger_days_before'   => $row['trigger_days_before'] ?? '',
+                'trigger_months_before' => $row['trigger_months_before'] ?? '',
+                'frequency'             => $row['frequency'] ?? '',
+                'frequency_hour'        => $row['frequency_hour'] ?? '',
+                'frequency_minute'      => $row['frequency_minute'] ?? '',
+            ];
+        }
+
+        return [];
     }
 
     private function getTargetTypeForDisplay(int $alertId): string
@@ -206,8 +256,13 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         ];
 
         foreach ($checks as $type => $table) {
-            $res = $DB->query("SELECT id FROM `$table` WHERE `plugin_alertsmanager_alerts_id` = '" . intval($alertId) . "' LIMIT 1");
-            if ($res && $DB->numrows($res) > 0) {
+            $res = $DB->request([
+                'SELECT' => ['id'],
+                'FROM'   => $table,
+                'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+                'LIMIT'  => 1,
+            ]);
+            if (count($res) > 0) {
                 return $type;
             }
         }
@@ -227,39 +282,95 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         $type = $this->getTargetTypeForDisplay($alertId);
         $targets = [];
 
-        if ($type === 'User') {
-            $res = $DB->query(
-                "SELECT u.id, CONCAT(u.firstname, ' ', u.name) AS label
-                 FROM `glpi_plugin_alertsmanager_alert_users` au
-                 INNER JOIN `glpi_users` u ON (u.id = au.users_id)
-                 WHERE au.plugin_alertsmanager_alerts_id = '" . intval($alertId) . "'
-                 ORDER BY u.name"
-            );
-        } elseif ($type === 'Group') {
-            $res = $DB->query(
-                "SELECT g.id, g.name AS label
-                 FROM `glpi_plugin_alertsmanager_alert_groups` ag
-                 INNER JOIN `glpi_groups` g ON (g.id = ag.groups_id)
-                 WHERE ag.plugin_alertsmanager_alerts_id = '" . intval($alertId) . "'
-                 ORDER BY g.name"
-            );
-        } elseif ($type === 'Profile') {
-            $res = $DB->query(
-                "SELECT p.id, p.name AS label
-                 FROM `glpi_plugin_alertsmanager_alert_profiles` ap
-                 INNER JOIN `glpi_profiles` p ON (p.id = ap.profiles_id)
-                 WHERE ap.plugin_alertsmanager_alerts_id = '" . intval($alertId) . "'
-                 ORDER BY p.name"
-            );
-        } else {
-            return [];
-        }
+        $appendTarget = static function (int $id, string $label) use (&$targets): void {
+            $label = trim($label);
+            if ($id > 0 && $label !== '') {
+                $targets[] = [
+                    'id'    => $id,
+                    'label' => $label,
+                ];
+            }
+        };
 
-        while ($row = $res->fetch_assoc()) {
-            $targets[] = [
-                'id'    => (int) $row['id'],
-                'label' => (string) $row['label'],
-            ];
+        if ($type === 'User') {
+            $links = $DB->request([
+                'SELECT' => ['users_id'],
+                'FROM'   => 'glpi_plugin_alertsmanager_alert_users',
+                'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+            ]);
+
+            $userIds = [];
+            foreach ($links as $link) {
+                $userIds[] = (int) $link['users_id'];
+            }
+
+            if (!empty($userIds)) {
+                foreach ($userIds as $userId) {
+                    $userRes = $DB->request([
+                        'SELECT' => ['id', 'firstname', 'name'],
+                        'FROM'   => 'glpi_users',
+                        'WHERE'  => ['id' => $userId],
+                        'LIMIT'  => 1,
+                    ]);
+
+                    foreach ($userRes as $user) {
+                        $label = trim((string) ($user['firstname'] ?? '') . ' ' . (string) ($user['name'] ?? ''));
+                        $appendTarget($userId, $label !== '' ? $label : (string) ($user['name'] ?? ''));
+                    }
+                }
+            }
+        } elseif ($type === 'Group') {
+            $links = $DB->request([
+                'SELECT' => ['groups_id'],
+                'FROM'   => 'glpi_plugin_alertsmanager_alert_groups',
+                'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+            ]);
+
+            $groupIds = [];
+            foreach ($links as $link) {
+                $groupIds[] = (int) $link['groups_id'];
+            }
+
+            if (!empty($groupIds)) {
+                foreach ($groupIds as $groupId) {
+                    $groupRes = $DB->request([
+                        'SELECT' => ['id', 'name'],
+                        'FROM'   => 'glpi_groups',
+                        'WHERE'  => ['id' => $groupId],
+                        'LIMIT'  => 1,
+                    ]);
+
+                    foreach ($groupRes as $group) {
+                        $appendTarget($groupId, (string) ($group['name'] ?? ''));
+                    }
+                }
+            }
+        } elseif ($type === 'Profile') {
+            $links = $DB->request([
+                'SELECT' => ['profiles_id'],
+                'FROM'   => 'glpi_plugin_alertsmanager_alert_profiles',
+                'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+            ]);
+
+            $profileIds = [];
+            foreach ($links as $link) {
+                $profileIds[] = (int) $link['profiles_id'];
+            }
+
+            if (!empty($profileIds)) {
+                foreach ($profileIds as $profileId) {
+                    $profileRes = $DB->request([
+                        'SELECT' => ['id', 'name'],
+                        'FROM'   => 'glpi_profiles',
+                        'WHERE'  => ['id' => $profileId],
+                        'LIMIT'  => 1,
+                    ]);
+
+                    foreach ($profileRes as $profile) {
+                        $appendTarget($profileId, (string) ($profile['name'] ?? ''));
+                    }
+                }
+            }
         }
 
         return $targets;

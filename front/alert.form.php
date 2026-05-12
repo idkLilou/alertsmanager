@@ -30,6 +30,8 @@
 
 use Glpi\Event;
 
+require_once __DIR__ . '/../inc/alert_trigger.class.php';
+
 Session::checkLoginUser();
 
 if (!isset($_GET['id'])) {
@@ -37,6 +39,42 @@ if (!isset($_GET['id'])) {
 }
 
 $alert = new PluginAlertsmanagerAlert();
+
+function alertsmanager_save_trigger(int $alertId, array $input = []): void {
+    /** @var DBmysql $DB */
+    global $DB;
+
+    if ($alertId <= 0) {
+        return;
+    }
+
+    $observedField = trim((string) ($input['observed_field'] ?? ''));
+    $triggerType = $observedField !== '' ? PluginAlertsmanagerAlertTrigger::TRIGGER_DATE_FIELD : PluginAlertsmanagerAlertTrigger::TRIGGER_FREQUENCY;
+    $observedItemtype = '';
+    if ($observedField !== '' && strpos($observedField, '.') !== false) {
+        [$tableName] = explode('.', $observedField, 2);
+        $observedItemtype = $tableName;
+    }
+
+    $payload = [
+        'plugin_alertsmanager_alerts_id' => $alertId,
+        'trigger_type'                   => $triggerType,
+        'observed_field'                 => $observedField,
+        'observed_itemtype'              => $observedItemtype,
+        'trigger_days_before'            => (int) ($input['trigger_days_before'] ?? 0),
+        'trigger_months_before'          => (int) ($input['trigger_months_before'] ?? 0),
+        'frequency'                      => trim((string) ($input['frequency'] ?? '')),
+        'frequency_hour'                 => (int) ($input['frequency_hour'] ?? 12),
+        'frequency_minute'               => (int) ($input['frequency_minute'] ?? 0),
+        'date_creation'                  => date('Y-m-d H:i:s'),
+    ];
+
+    $DB->delete('glpi_plugin_alertsmanager_alert_triggers', [
+        'plugin_alertsmanager_alerts_id' => $alertId,
+    ]);
+
+    $DB->insert('glpi_plugin_alertsmanager_alert_triggers', $payload);
+}
 
 /**
  * Save target relations (users/groups/profiles)
@@ -107,6 +145,7 @@ if (isset($_POST['update'])) {
             'admin',
             sprintf(__s('%s updates an item', 'alertsmanager'), $_SESSION['glpiname']),
         );
+        alertsmanager_save_trigger((int) $_POST['id'], $_POST);
         // Save targets relations
         alertsmanager_save_targets((int) $_POST['id'], $_POST['target_type'] ?? '', $_POST['targets'] ?? []);
     }
@@ -123,6 +162,7 @@ if (isset($_POST['update'])) {
         );
 
         // Save targets relations
+    alertsmanager_save_trigger((int) $newID, $_POST);
         alertsmanager_save_targets((int) $newID, $_POST['target_type'] ?? '', $_POST['targets'] ?? []);
 
         if ($_SESSION['glpibackcreated']) {

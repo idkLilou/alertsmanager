@@ -117,7 +117,7 @@
 
         <div class="col-xxl-4 col-xl-6">
             <label class="control-label">{{ __('Targets', 'alertsmanager') }}</label>
-            <select id="alert_targets" name="targets[]" class="form-select w-100">
+            <select id="alert_targets" name="targets[]" class="form-select w-100" data-selected-targets="{{ item.fields._target_ids|default([])|join(',') }}">
                 <option value="">-- {{ __('Select', 'alertsmanager') }} --</option>
                 {# Server-side initial options for display when editing an existing alert #}
                 {% for t in item.fields._targets ?? [] %}
