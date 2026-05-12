@@ -9,6 +9,8 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
     // Alert management functions
     const AlertsManager = {
+        formHandlersAttached: false,
+
         init: function() {
             console.log('[AlertsManager] Initializing AlertsManager...');
             this.setupEventListeners();
@@ -37,26 +39,62 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
         setupFormHandlers: function() {
             console.log('[AlertsManager] setupFormHandlers() called');
-            
-            // Observed field change handler
-            const observedField = document.getElementById('alert_observed_field');
-            console.log('[AlertsManager] observed_field element:', observedField);
-            if (observedField) {
+
+            const attach = () => {
+                if (this.formHandlersAttached) {
+                    return true;
+                }
+
+                const observedField = document.getElementById('alert_observed_field');
+                const targetType = document.getElementById('alert_target_type');
+                const targetsSelect = document.getElementById('alert_targets');
+
+                console.log('[AlertsManager] observed_field element:', observedField);
+                console.log('[AlertsManager] target_type element:', targetType);
+                console.log('[AlertsManager] targets element:', targetsSelect);
+
+                if (!observedField || !targetType || !targetsSelect) {
+                    return false;
+                }
+
                 observedField.addEventListener('change', (e) => {
                     console.log('[AlertsManager] observed_field changed to:', e.target.value);
                     this.updateTriggerFields(e.target.value);
                 });
-            }
 
-            // Target type change handler
-            const targetType = document.getElementById('alert_target_type');
-            console.log('[AlertsManager] target_type element:', targetType);
-            if (targetType) {
                 targetType.addEventListener('change', (e) => {
                     console.log('[AlertsManager] target_type changed to:', e.target.value);
-                    this.updateTargetOptions(e.target.value);
+                    this.loadTargets(e.target.value);
                 });
+
+                this.formHandlersAttached = true;
+
+                if (observedField.value) {
+                    this.updateTriggerFields(observedField.value);
+                }
+
+                if (targetType.value) {
+                    this.loadTargets(targetType.value);
+                }
+
+                return true;
+            };
+
+            if (attach()) {
+                return;
             }
+
+            console.log('[AlertsManager] form fields not ready yet, waiting for DOM mutations');
+            const observer = new MutationObserver(() => {
+                if (attach()) {
+                    observer.disconnect();
+                }
+            });
+
+            observer.observe(document.documentElement, {
+                childList: true,
+                subtree: true,
+            });
 
             // Setup preview listeners
             this.setupPreviewListeners();
@@ -83,27 +121,20 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
             }
         },
 
-        updateTargetOptions: async function(targetType) {
-            console.log('[AlertsManager] updateTargetOptions() called with type:', targetType);
+        loadTargets: async function(targetType) {
+            console.log('[AlertsManager] loadTargets() called with type:', targetType);
             const targetsSelect = document.getElementById('alert_targets');
-            console.log('[AlertsManager] targets select element:', targetsSelect);
             if (!targetsSelect) {
                 console.error('[AlertsManager] alert_targets element not found!');
                 return;
             }
 
-            // Reset previous UI wrappers if any
-            if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2 && $(targetsSelect).hasClass('select2-hidden-accessible')) {
-                console.log('[AlertsManager] destroying previous select2');
-                $(targetsSelect).select2('destroy');
-            }
+            targetsSelect.innerHTML = '';
 
             if (!targetType) {
-                console.log('[AlertsManager] no targetType, clearing options');
-                targetsSelect.innerHTML = '';
+                targetsSelect.appendChild(new Option('-- Select --', ''));
                 return;
             }
-            targetsSelect.innerHTML = '';
 
             try {
                 const query = new URLSearchParams({
@@ -111,37 +142,27 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                     limit: '5000'
                 });
                 const url = '/plugins/alertsmanager/ajax/targets.php?' + query.toString();
-                console.log('[AlertsManager] fetching from:', url);
-                const resp = await fetch(url, {
-                    credentials: 'same-origin',
-                });
-                console.log('[AlertsManager] response status:', resp.status, resp.ok);
+                console.log('[AlertsManager] fetching targets from:', url);
+                const resp = await fetch(url, { credentials: 'same-origin' });
                 if (!resp.ok) {
                     throw new Error('Network response was not ok');
                 }
+
                 const data = await resp.json();
-                console.log('[AlertsManager] received data:', data);
+                console.log('[AlertsManager] received', data.length, 'targets');
+                targetsSelect.appendChild(new Option('-- Select --', ''));
                 data.forEach(item => {
                     const optionEl = document.createElement('option');
                     optionEl.value = item.id;
                     optionEl.textContent = item.label;
                     targetsSelect.appendChild(optionEl);
                 });
-
-                // Enhance with select2 when available for easy multi-selection + search.
-                if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
-                    console.log('[AlertsManager] initializing select2');
-                    $(targetsSelect).select2({
-                        placeholder: '-- Select --',
-                        width: '100%',
-                        closeOnSelect: false
-                    });
-                }
             } catch (e) {
                 console.error('[AlertsManager] Failed to load targets:', e);
+                targetsSelect.innerHTML = '';
+                targetsSelect.appendChild(new Option('-- Error loading targets --', ''));
             }
         },
-
         // Preview handling (mail preview)
         reloadPreview: async function() {
             const form = document.querySelector('form[name=asset_form]') || document.querySelector('form');

@@ -7,7 +7,10 @@ if (!defined('GLPI_ROOT')) {
 header('Content-Type: application/json; charset=utf-8');
 
 try {
+    error_log('[alertsmanager][targets] Request received. Type: ' . $_GET['target_type'] ?? 'NONE');
+    
     if (!Session::haveRight('plugin_alertsmanager_alert', READ) && !Session::haveRight('config', READ)) {
+        error_log('[alertsmanager][targets] Access denied');
         http_response_code(403);
         echo json_encode([]);
         exit;
@@ -19,6 +22,8 @@ try {
     $limit = intval($_GET['limit'] ?? 50);
     $limit = max(1, min($limit, 5000));
     $results = [];
+
+    error_log('[alertsmanager][targets] Processing type: ' . $type . ', query: ' . $q . ', limit: ' . $limit);
 
     /** @var DBmysql $DB */
     global $DB;
@@ -34,7 +39,8 @@ try {
                 continue;
             }
 
-            if (stripos($label, $query) === false) {
+            // Only filter if $query is not empty
+            if ($query !== '' && stripos($label, $query) === false) {
                 continue;
             }
 
@@ -78,6 +84,7 @@ try {
             break;
     }
 
+    error_log('[alertsmanager][targets] Returning ' . count($results) . ' results for type: ' . $type);
     echo json_encode($results);
     exit;
 } catch (Throwable $e) {
