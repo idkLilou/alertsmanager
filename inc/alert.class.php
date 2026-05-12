@@ -50,6 +50,11 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return 'PluginAlertsmanagerAlert';
     }
 
+    public static function getIcon()
+    {
+        return 'ti ti-bell-ringing';
+    }
+
     public static function canCreate(): bool
     {
         return Session::haveRight(self::$rightname, CREATE) || Session::haveRight('config', UPDATE);
