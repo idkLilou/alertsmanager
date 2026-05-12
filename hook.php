@@ -108,12 +108,13 @@ function plugin_alertsmanager_install()
     $alert_triggers_table = 'glpi_plugin_alertsmanager_alert_triggers';
     if (!$DB->tableExists($alert_triggers_table)) {
         $DB->doQuery("
-         CREATE TABLE IF NOT EXISTS `$alert_triggers_table` (
+                 CREATE TABLE IF NOT EXISTS `$alert_triggers_table` (
          `id`                              INT {$default_key_sign} NOT NULL AUTO_INCREMENT,
          `plugin_alertsmanager_alerts_id`  INT {$default_key_sign} NOT NULL DEFAULT 0,
          `trigger_type`                    INT {$default_key_sign} NOT NULL DEFAULT 1,
          `observed_field`                  VARCHAR(255),
          `observed_itemtype`               VARCHAR(255),
+                    `start_date`                      DATE DEFAULT NULL,
          `trigger_days_before`             INT {$default_key_sign} DEFAULT 0,
          `trigger_months_before`           INT {$default_key_sign} DEFAULT 0,
          `frequency`                       VARCHAR(50),
@@ -124,6 +125,21 @@ function plugin_alertsmanager_install()
          PRIMARY KEY (`id`)
          ) ENGINE = INNODB DEFAULT CHARSET = {$default_charset} COLLATE = {$default_collation}
         ");
+    }
+    // Ensure start_date exists on older installs
+    if ($DB->tableExists($alert_triggers_table)) {
+        // Add column if it does not exist (MySQL 8+ supports IF NOT EXISTS)
+        try {
+            $DB->doQuery("ALTER TABLE `$alert_triggers_table` ADD COLUMN IF NOT EXISTS `start_date` DATE DEFAULT NULL");
+        } catch (\Throwable $e) {
+            // If ALTER with IF NOT EXISTS is not supported by MySQL version, ignore and try a safe check
+            try {
+                // Try to add column without IF NOT EXISTS; if it fails, swallow the error
+                $DB->doQuery("ALTER TABLE `$alert_triggers_table` ADD COLUMN `start_date` DATE DEFAULT NULL");
+            } catch (\Throwable $__e) {
+                // best-effort: leave existing schema as-is
+            }
+        }
     }
 
     $migration->displayMessage("Installation completed successfully");

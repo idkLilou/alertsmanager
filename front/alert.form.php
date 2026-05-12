@@ -61,6 +61,7 @@ function alertsmanager_save_trigger(int $alertId, array $input = []): void {
         'trigger_type'                   => $triggerType,
         'observed_field'                 => $observedField,
         'observed_itemtype'              => $observedItemtype,
+        'start_date'                     => (isset($input['trigger_start_date']) && trim((string)$input['trigger_start_date']) !== '') ? trim((string)$input['trigger_start_date']) : null,
         'trigger_days_before'            => (int) ($input['trigger_days_before'] ?? 0),
         'trigger_months_before'          => (int) ($input['trigger_months_before'] ?? 0),
         'frequency'                      => trim((string) ($input['frequency'] ?? '')),

@@ -59,8 +59,17 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
                 observedField.addEventListener('change', (e) => {
                     console.log('[AlertsManager] observed_field changed to:', e.target.value);
-                    this.updateTriggerFields(e.target.value);
+                    this.updateTriggerFields();
                 });
+
+                // Also react to frequency changes to show/hide start date when needed
+                const frequencySelect = document.getElementById('frequency');
+                if (frequencySelect) {
+                    frequencySelect.addEventListener('change', (e) => {
+                        console.log('[AlertsManager] frequency changed to:', e.target.value);
+                        this.updateTriggerFields();
+                    });
+                }
 
                 targetType.addEventListener('change', (e) => {
                     console.log('[AlertsManager] target_type changed to:', e.target.value);
@@ -69,9 +78,8 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
                 this.formHandlersAttached = true;
 
-                if (observedField.value) {
-                    this.updateTriggerFields(observedField.value);
-                }
+                // Always update trigger fields visibility on load
+                this.updateTriggerFields();
 
                 if (targetType.value) {
                     this.loadTargets(targetType.value);
@@ -105,19 +113,28 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
             }
         },
 
-        updateTriggerFields: function(value) {
+        updateTriggerFields: function() {
+            const observedField = document.getElementById('alert_observed_field');
+            const frequencySelect = document.getElementById('frequency');
             const dateGroup = document.getElementById('date_trigger_group');
             const daysGroup = document.getElementById('date_trigger_days_group');
             const frequencyGroup = document.getElementById('frequency_trigger_group');
+            const startDateGroup = document.getElementById('start_date_group');
 
-            if (value) {
+            const hasObserved = observedField && observedField.value;
+            const hasFrequency = frequencySelect && frequencySelect.value;
+
+            if (hasObserved) {
                 if (dateGroup) dateGroup.style.display = 'block';
                 if (daysGroup) daysGroup.style.display = 'block';
                 if (frequencyGroup) frequencyGroup.style.display = 'none';
+                if (startDateGroup) startDateGroup.style.display = 'none';
             } else {
                 if (dateGroup) dateGroup.style.display = 'none';
                 if (daysGroup) daysGroup.style.display = 'none';
                 if (frequencyGroup) frequencyGroup.style.display = 'block';
+                // Show start date only when a frequency is selected
+                if (startDateGroup) startDateGroup.style.display = hasFrequency ? 'block' : 'none';
             }
         },
 

@@ -98,6 +98,13 @@
         base_option_small
     ) }}
 
+    <div class="row" id="start_date_group">
+        <div class="col-xxl-4 col-xl-6">
+            <label class="control-label">{{ __('Start date', 'alertsmanager') }}</label>
+            <input type="date" id="trigger_start_date" name="trigger_start_date" class="form-control" value="{{ item.fields.trigger_start_date ?? '' }}" />
+        </div>
+    </div>
+
     <div class="hr-text mt-3">
         <i class="ti ti-target"></i>
         <span>{{ __('Targets', 'alertsmanager') }}</span>
