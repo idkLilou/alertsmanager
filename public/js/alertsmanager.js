@@ -128,14 +128,13 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                 if (dateGroup) dateGroup.style.display = 'block';
                 if (daysGroup) daysGroup.style.display = 'block';
                 if (frequencyGroup) frequencyGroup.style.display = 'none';
-                if (startDateGroup) startDateGroup.style.display = 'none';
             } else {
                 if (dateGroup) dateGroup.style.display = 'none';
                 if (daysGroup) daysGroup.style.display = 'none';
                 if (frequencyGroup) frequencyGroup.style.display = 'block';
-                // Show start date only when a frequency is selected
-                if (startDateGroup) startDateGroup.style.display = hasFrequency ? 'block' : 'none';
             }
+
+            if (startDateGroup) startDateGroup.style.display = 'block';
         },
 
         loadTargets: async function(targetType) {
