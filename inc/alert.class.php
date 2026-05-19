@@ -405,6 +405,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
             'NetworkEquipment',
             'Peripheral',
             'Project',
+            'ProjectTask',
             'User',
             'Group',
             'Profile',
