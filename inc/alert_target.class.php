@@ -134,22 +134,6 @@ class PluginAlertsmanagerAlertTarget
 
         $emails = [];
 
-        $userRows = $DB->request([
-            'SELECT' => ['id', 'email'],
-            'FROM'   => 'glpi_users',
-            'WHERE'  => [
-                'id'    => $userIds,
-                'email' => ['<>', ''],
-            ],
-        ]);
-
-        foreach ($userRows as $row) {
-            $email = trim((string) ($row['email'] ?? ''));
-            if ($email !== '') {
-                $emails[strtolower($email)] = $email;
-            }
-        }
-
         $extraEmailRows = $DB->request([
             'SELECT' => ['users_id', 'email'],
             'FROM'   => 'glpi_useremails',
