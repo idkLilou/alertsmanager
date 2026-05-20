@@ -73,8 +73,23 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
                 targetType.addEventListener('change', (e) => {
                     console.log('[AlertsManager] target_type changed to:', e.target.value);
+                    targetsSelect.dataset.selectedTargets = '';
                     this.loadTargets(e.target.value);
                 });
+
+                targetsSelect.addEventListener('change', () => {
+                    const selectedTargetIds = Array.from(targetsSelect.selectedOptions || [])
+                        .map(option => String(option.value || '').trim())
+                        .filter(value => value !== '');
+                    targetsSelect.dataset.selectedTargets = selectedTargetIds.join(',');
+                });
+
+                const testSendButton = document.querySelector('.alertsmanager-test-send');
+                if (testSendButton) {
+                    testSendButton.addEventListener('click', () => {
+                        this.testSendMail(testSendButton);
+                    });
+                }
 
                 this.formHandlersAttached = true;
 
@@ -214,6 +229,68 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
             }
         },
 
+        testSendMail: async function(button) {
+            const alertId = button?.dataset?.alertId || '0';
+            const resultContainer = document.querySelector('.alertsmanager-test-send-result');
+            const form = button?.closest('form') || document.querySelector('form[name=asset_form]') || document.querySelector('form');
+
+            if (!alertId || alertId === '0') {
+                if (resultContainer) {
+                    resultContainer.innerHTML = '<div class="alert alert-warning mb-0">Save the alert before sending a test mail.</div>';
+                }
+                return;
+            }
+
+            if (button) {
+                button.disabled = true;
+            }
+
+            try {
+                const formData = form ? new FormData(form) : new FormData();
+                formData.append('alert_id', alertId);
+
+                if (!formData.has('_glpi_csrf_token')) {
+                    const csrfToken = document.querySelector('input[name="_glpi_csrf_token"]')?.value || '';
+                    if (csrfToken) {
+                        formData.append('_glpi_csrf_token', csrfToken);
+                    }
+                }
+
+                const resp = await fetch('/plugins/alertsmanager/ajax/test_send.php', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                });
+
+                const raw = await resp.text();
+                let data = null;
+
+                try {
+                    data = JSON.parse(raw);
+                } catch (parseError) {
+                    throw new Error('HTTP ' + resp.status + ': ' + raw.slice(0, 300));
+                }
+
+                if (resultContainer) {
+                    if (data.success) {
+                        resultContainer.innerHTML = '<div class="alert alert-success mb-0">Test mail sent to ' + (data.recipients || []).join(', ') + '</div>';
+                    } else {
+                        resultContainer.innerHTML = '<div class="alert alert-danger mb-0">' + (data.error || 'Mail send failed') + '</div>';
+                    }
+                }
+
+                await this.refreshCsrfToken(form);
+            } catch (e) {
+                if (resultContainer) {
+                    resultContainer.innerHTML = '<div class="alert alert-danger mb-0">Unable to reach the test endpoint. ' + (e?.message || '') + '</div>';
+                }
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                }
+            }
+        },
+
         setupPreviewListeners: function() {
             const form = document.querySelector('form[name=asset_form]') || document.querySelector('form');
             if (!form) return;
@@ -224,6 +301,33 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
             // Also trigger on select change
             inputs.forEach(i => i.addEventListener('change', debounced));
+        },
+
+        refreshCsrfToken: async function(form) {
+            const tokenInput = form?.querySelector('input[name="_glpi_csrf_token"]');
+            if (!tokenInput) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(window.location.href, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                });
+
+                if (!resp.ok) {
+                    return;
+                }
+
+                const html = await resp.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const newToken = doc.querySelector('input[name="_glpi_csrf_token"]')?.value || '';
+                if (newToken) {
+                    tokenInput.value = newToken;
+                }
+            } catch (e) {
+                console.warn('[AlertsManager] Failed to refresh CSRF token after test send:', e);
+            }
         },
 
         checkAllRows: function(checkbox) {
