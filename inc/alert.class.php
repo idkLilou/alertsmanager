@@ -171,6 +171,19 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return PluginAlertsmanagerAlertTarget::getRecipientUserIdsForAlert((int) $this->fields['id']);
     }
 
+    public function sendMail(array $context = []): array
+    {
+        if (!isset($this->fields['id'])) {
+            return [
+                'success' => false,
+                'sent'    => 0,
+                'errors'  => ['Alert is not loaded'],
+            ];
+        }
+
+        return PluginAlertsmanagerAlertMailer::sendAlertItem($this, $context);
+    }
+
     public function showForm($ID, $options = [])
     {
         error_log('[AlertsManager] showForm() called with ID=' . $ID);
