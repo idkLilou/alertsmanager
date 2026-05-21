@@ -65,33 +65,6 @@
             <span>{{ __('Test send mail', 'alertsmanager') }}</span>
         </button>
         <div class="alertsmanager-test-send-result mt-2"></div>
-
-        <div class="mt-3 p-3 border rounded bg-white">
-            <div class="fw-bold mb-2">{{ __('Test context', 'alertsmanager') }}</div>
-            <div class="text-muted small mb-3">{{ __('Values in this block are only used for the test mail and are not saved on the alert.', 'alertsmanager') }}</div>
-            <div class="row g-3">
-                <div class="col-xxl-4 col-xl-6">
-                    <label class="control-label">{{ __('Test object name', 'alertsmanager') }}</label>
-                    <input type="text" id="alertsmanager-test-trigger-item-name" class="form-control" value="{{ item.fields.test_trigger_item_name ?? '' }}" placeholder="{{ __('Example: Ticket #1234', 'alertsmanager') }}" />
-                </div>
-                <div class="col-xxl-4 col-xl-6">
-                    <label class="control-label">{{ __('Test object URL', 'alertsmanager') }}</label>
-                    <input type="text" id="alertsmanager-test-trigger-item-url" class="form-control" value="{{ item.fields.test_trigger_item_url ?? '' }}" placeholder="{{ __('Example: /front/ticket.form.php?id=1234', 'alertsmanager') }}" />
-                </div>
-                <div class="col-xxl-4 col-xl-6">
-                    <label class="control-label">{{ __('Test entity', 'alertsmanager') }}</label>
-                    <input type="text" id="alertsmanager-test-entity-name" class="form-control" value="{{ item.fields.test_entity_name ?? '' }}" placeholder="{{ __('Example: Head office', 'alertsmanager') }}" />
-                </div>
-                <div class="col-xxl-4 col-xl-6">
-                    <label class="control-label">{{ __('Test field', 'alertsmanager') }}</label>
-                    <input type="text" id="alertsmanager-test-trigger-field" class="form-control" value="{{ item.fields.test_trigger_field ?? '' }}" placeholder="{{ __('Example: end_date', 'alertsmanager') }}" />
-                </div>
-                <div class="col-xxl-8 col-xl-6">
-                    <label class="control-label">{{ __('Test field value', 'alertsmanager') }}</label>
-                    <input type="text" id="alertsmanager-test-trigger-field-value" class="form-control" value="{{ item.fields.test_trigger_field_value ?? '' }}" placeholder="{{ __('Example: 2026-05-20', 'alertsmanager') }}" />
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="hr-text mt-3">

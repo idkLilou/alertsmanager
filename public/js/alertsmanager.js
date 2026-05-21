@@ -249,26 +249,6 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                 const formData = form ? new FormData(form) : new FormData();
                 formData.append('alert_id', alertId);
 
-                const simulationFields = [
-                    ['test_trigger_item_name', 'alertsmanager-test-trigger-item-name'],
-                    ['test_trigger_item_url', 'alertsmanager-test-trigger-item-url'],
-                    ['test_entity_name', 'alertsmanager-test-entity-name'],
-                    ['test_trigger_field', 'alertsmanager-test-trigger-field'],
-                    ['test_trigger_field_value', 'alertsmanager-test-trigger-field-value'],
-                ];
-
-                simulationFields.forEach(([postKey, elementId]) => {
-                    if (formData.has(postKey)) {
-                        formData.delete(postKey);
-                    }
-
-                    const element = document.getElementById(elementId);
-                    const value = element?.value?.trim?.() || '';
-                    if (value !== '') {
-                        formData.append(postKey, value);
-                    }
-                });
-
                 if (!formData.has('_glpi_csrf_token')) {
                     const csrfToken = document.querySelector('input[name="_glpi_csrf_token"]')?.value || '';
                     if (csrfToken) {
