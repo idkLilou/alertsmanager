@@ -52,7 +52,7 @@ Fonctionnalités
       <version>
          <num>1.0.0</num>
          <compatibility>~11.0.0</compatibility>
-         <download_url>https://github.com/idkLilou/alertsmanager/archive/refs/heads/main.zip</download_url>
+         <download_url>https://github.com/idkLilou/alertsmanager/archive/refs/tags/v1.0.0.zip</download_url>
       </version>
    </versions>
 </root>
