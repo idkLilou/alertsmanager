@@ -33,6 +33,33 @@ if (!defined('GLPI_ROOT')) {
     return;
 }
 
+class PluginAlertsmanagerOutlookMailer extends GLPIMailer
+{
+    private ?array $calendarInvite;
+
+    public function __construct(?array $calendarInvite = null)
+    {
+        parent::__construct();
+        $this->calendarInvite = $calendarInvite;
+    }
+
+    public function send()
+    {
+        if (
+            is_array($this->calendarInvite)
+            && !empty($this->calendarInvite['path'])
+            && is_file((string) $this->calendarInvite['path'])
+        ) {
+            $this->getEmail()->attachFromPath(
+                (string) $this->calendarInvite['path'],
+                (string) ($this->calendarInvite['name'] ?? basename((string) $this->calendarInvite['path']))
+            );
+        }
+
+        return parent::send();
+    }
+}
+
 class PluginAlertsmanagerAlertMailer
 {
     public static function sendAlert(int $alertId, array $context = []): array
@@ -172,48 +199,200 @@ class PluginAlertsmanagerAlertMailer
         string $bodyHtml,
         array $context
     ): array {
-        $mailing = new NotificationMailing();
-        $queued = $mailing->sendNotification([
-            '_itemtype'                 => PluginAlertsmanagerAlert::class,
-            '_items_id'                 => (int) $alert->getID(),
-            '_notificationtemplates_id' => 0,
-            '_entities_id'              => (int) $alert->getEntityID(),
-            'from'                      => (string) ($sender['email'] ?? ''),
-            'fromname'                  => (string) ($sender['name'] ?? ''),
-            'to'                        => $recipientEmail,
-            'toname'                    => $recipientEmail,
-            'subject'                   => $subject,
-            'content_text'              => $bodyText,
-            'content_html'              => $bodyHtml,
-            'event'                     => (string) ($context['event'] ?? 'alertsmanager_send'),
+        $calendarInvite = self::buildCalendarInvite($alert, $sender, $recipientEmail, $subject, $context);
+
+        try {
+            if ($calendarInvite !== null) {
+                NotificationEventMailing::setMailer(new PluginAlertsmanagerOutlookMailer($calendarInvite));
+            }
+
+            $mailing = new NotificationMailing();
+            $queued = $mailing->sendNotification([
+                '_itemtype'                 => PluginAlertsmanagerAlert::class,
+                '_items_id'                 => (int) $alert->getID(),
+                '_notificationtemplates_id' => 0,
+                '_entities_id'              => (int) $alert->getEntityID(),
+                'from'                      => (string) ($sender['email'] ?? ''),
+                'fromname'                  => (string) ($sender['name'] ?? ''),
+                'to'                        => $recipientEmail,
+                'toname'                    => $recipientEmail,
+                'subject'                   => $subject,
+                'content_text'              => $bodyText,
+                'content_html'              => $bodyHtml,
+                'event'                     => (string) ($context['event'] ?? 'alertsmanager_send'),
+            ]);
+
+            if (!$queued) {
+                return [
+                    'success' => false,
+                    'error'   => 'Unable to queue mail',
+                ];
+            }
+
+            $queuedNotification = self::findLastQueuedNotification((int) $alert->getID(), $recipientEmail, $subject);
+            if ($queuedNotification === null) {
+                return [
+                    'success' => false,
+                    'error'   => 'Mail queued but queued notification could not be found',
+                ];
+            }
+
+            if (!$queuedNotification->sendById((int) $queuedNotification->getID())) {
+                return [
+                    'success' => false,
+                    'error'   => 'Mail queued but sending failed',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'error'   => '',
+            ];
+        } finally {
+            NotificationEventMailing::setMailer(null);
+            if (is_array($calendarInvite) && !empty($calendarInvite['path']) && is_file((string) $calendarInvite['path'])) {
+                @unlink((string) $calendarInvite['path']);
+            }
+        }
+    }
+
+    private static function buildCalendarInvite(PluginAlertsmanagerAlert $alert, array $sender, string $recipientEmail, string $subject, array $context): ?array
+    {
+        $eventDate = self::extractCalendarEventDate($context);
+        if ($eventDate === null) {
+            return null;
+        }
+
+        $senderEmail = trim((string) ($sender['email'] ?? ''));
+        $senderName = trim((string) ($sender['name'] ?? ''));
+
+        $title = trim((string) ($context['item_name'] ?? $context['trigger_item_name'] ?? $alert->fields['name'] ?? $subject));
+        if ($title === '') {
+            $title = (string) $alert->fields['name'];
+        }
+
+        $descriptionParts = [];
+        $entityName = trim((string) ($context['entity_name'] ?? ''));
+        if ($entityName !== '') {
+            $descriptionParts[] = sprintf('Entite: %s', $entityName);
+        }
+        $itemUrl = trim((string) ($context['item_url'] ?? $context['trigger_item_url'] ?? ''));
+        if ($itemUrl !== '') {
+            $descriptionParts[] = $itemUrl;
+        }
+        $descriptionParts[] = sprintf('Alerte envoyee a: %s', $recipientEmail);
+
+        // create an all-day event: DTSTART/DTEND as dates (DTEND is non-inclusive, next day)
+        $startDate = $eventDate->setTime(0, 0, 0);
+        $endDate = $startDate->modify('+1 day');
+
+        $inviteBody = self::renderIcs([
+            'uid'         => sprintf('alertsmanager-%d-%s-%s', (int) $alert->getID(), sha1($recipientEmail), $eventDate->format('Ymd')),
+            'title'       => $title,
+            'description' => implode("\n", $descriptionParts),
+            'start'       => $startDate,
+            'end'         => $endDate,
+            'all_day'     => true,
+            'recipient'   => $recipientEmail,
+            'organizer'   => $senderEmail,
+            'organizer_name' => $senderName,
         ]);
 
-        if (!$queued) {
-            return [
-                'success' => false,
-                'error'   => 'Unable to queue mail',
-            ];
-        }
-
-        $queuedNotification = self::findLastQueuedNotification((int) $alert->getID(), $recipientEmail, $subject);
-        if ($queuedNotification === null) {
-            return [
-                'success' => false,
-                'error'   => 'Mail queued but queued notification could not be found',
-            ];
-        }
-
-        if (!$queuedNotification->sendById((int) $queuedNotification->getID())) {
-            return [
-                'success' => false,
-                'error'   => 'Mail queued but sending failed',
-            ];
+        $filePath = GLPI_TMP_DIR . '/' . uniqid('alertsmanager_', true) . '.ics';
+        if (@file_put_contents($filePath, $inviteBody) === false) {
+            return null;
         }
 
         return [
-            'success' => true,
-            'error'   => '',
+            'path' => $filePath,
+            'name' => self::sanitizeFilename($title) . '.ics',
         ];
+    }
+
+    private static function extractCalendarEventDate(array $context): ?DateTimeImmutable
+    {
+        foreach (['trigger_field_value', 'field_value', 'trigger_date', 'trigger_due_date', 'due_date'] as $key) {
+            if (empty($context[$key])) {
+                continue;
+            }
+
+            try {
+                return new DateTimeImmutable((string) $context[$key]);
+            } catch (Throwable) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    private static function renderIcs(array $data): string
+    {
+        $utc = new DateTimeZone('UTC');
+        $recipient = trim((string) ($data['recipient'] ?? ''));
+        $organizer = trim((string) ($data['organizer'] ?? ''));
+        $organizerName = trim((string) ($data['organizer_name'] ?? ''));
+        $organizerLabel = $organizerName !== '' ? $organizerName : $organizer;
+
+        $lines = [
+            'BEGIN:VCALENDAR',
+            'PRODID:-//Alerts Manager//GLPI//FR',
+            'VERSION:2.0',
+            'CALSCALE:GREGORIAN',
+            'METHOD:REQUEST',
+            'BEGIN:VEVENT',
+            'UID:' . self::escapeIcsValue((string) $data['uid']),
+            'DTSTAMP:' . gmdate('Ymd\THis\Z'),
+        ];
+
+        // all-day event -> use DATE value type and mark for Microsoft Outlook
+        if (!empty($data['all_day'])) {
+            $lines[] = 'X-MICROSOFT-CDO-ALLDAYEVENT:TRUE';
+            $lines[] = 'DTSTART;VALUE=DATE:' . $data['start']->format('Ymd');
+            $lines[] = 'DTEND;VALUE=DATE:' . $data['end']->format('Ymd');
+        } else {
+            $lines[] = 'DTSTART:' . $data['start']->setTimezone($utc)->format('Ymd\THis\Z');
+            $lines[] = 'DTEND:' . $data['end']->setTimezone($utc)->format('Ymd\THis\Z');
+        }
+
+        $lines = array_merge($lines, [
+            'SUMMARY:' . self::escapeIcsValue((string) $data['title']),
+            'DESCRIPTION:' . self::escapeIcsValue((string) $data['description']),
+            ($organizer !== '' ? 'ORGANIZER;CN=' . self::escapeIcsValue($organizerLabel) . ':mailto:' . self::escapeIcsValue($organizer) : null),
+            ($recipient !== '' ? 'ATTENDEE;CN=' . self::escapeIcsValue($recipient) . ';ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:' . self::escapeIcsValue($recipient) : null),
+            'STATUS:CONFIRMED',
+            'TRANSP:OPAQUE',
+            'BEGIN:VALARM',
+            (!empty($data['all_day']) ? 'TRIGGER:-P0D' : 'TRIGGER:-PT0M'),
+            'ACTION:DISPLAY',
+            'DESCRIPTION:' . self::escapeIcsValue((string) $data['title']),
+            'END:VALARM',
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ]);
+
+        $lines = array_values(array_filter($lines, static fn($line) => is_string($line) && $line !== ''));
+
+        return implode("\r\n", $lines) . "\r\n";
+    }
+
+    private static function escapeIcsValue(string $value): string
+    {
+        $value = str_replace('\\', '\\\\', $value);
+        $value = str_replace(["\r\n", "\r", "\n"], '\\n', $value);
+        $value = str_replace(';', '\\;', $value);
+        $value = str_replace(',', '\\,', $value);
+
+        return $value;
+    }
+
+    private static function sanitizeFilename(string $value): string
+    {
+        $value = trim($value);
+        $value = preg_replace('/[^A-Za-z0-9._-]+/', '-', $value);
+        $value = trim((string) $value, '-_.');
+
+        return $value !== '' ? $value : 'outlook-invite';
     }
 
     private static function findLastQueuedNotification(int $alertId, string $recipientEmail, string $subject): ?QueuedNotification
