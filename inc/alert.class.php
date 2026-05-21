@@ -537,8 +537,13 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 
         error_log('[AlertsManager] getAvailableObservedFields() started');
         $standardFields = self::getStandardDateFieldsFromInformationSchema();
-        $fallbackFields = self::getStandardDateFieldsFromItemtypes();
-        $fields = $standardFields + $fallbackFields;
+        $fields = $standardFields;
+        $fallbackFields = [];
+
+        if (count($standardFields) === 0) {
+            $fallbackFields = self::getStandardDateFieldsFromItemtypes();
+            $fields = $fallbackFields;
+        }
 
         error_log('[AlertsManager] Found ' . count($standardFields) . ' standard date fields from information_schema');
         error_log('[AlertsManager] Found ' . count($fallbackFields) . ' fallback standard date fields from itemtypes');
@@ -563,19 +568,34 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         $fields = [];
 
         try {
-            $query = "SELECT table_name, column_name, data_type
+            $query = "SELECT table_schema, table_name, column_name, data_type
                       FROM information_schema.columns
-                      WHERE table_name LIKE 'glpi_%'
+                      WHERE table_schema = DATABASE()
                         AND LOWER(data_type) IN ('date', 'datetime', 'timestamp')
-                        AND table_name NOT LIKE 'glpi_plugin_fields_%'
-                      ORDER BY table_name, column_name";
+                      ORDER BY table_schema, table_name, column_name";
 
-            $result = $DB->query($query);
+            error_log('[AlertsManager] information_schema query starting');
+            error_log('[AlertsManager] Query: ' . $query);
+
+            $usedConnection = 'GLPI DB wrapper ($DB->doQuery)';
+            $result = $DB->doQuery($query);
             if ($result === false) {
-                throw new RuntimeException('information_schema query failed');
+                $dbErr = method_exists($DB, 'getError') ? $DB->getError() : 'query failed';
+                error_log('[AlertsManager] GLPI DB wrapper query failed: ' . $dbErr);
+                throw new RuntimeException('information_schema query failed via doQuery');
             }
 
+            error_log('[AlertsManager] information_schema query executed using: ' . $usedConnection);
+
+            $sample = [];
+            $rowCount = 0;
+
             while ($row = $result->fetch_assoc()) {
+                $rowCount++;
+                if ($rowCount <= 5) {
+                    $sample[] = $row;
+                }
+
                 $tableName = trim((string) ($row['table_name'] ?? ''));
                 $columnName = trim((string) ($row['column_name'] ?? ''));
 
@@ -595,6 +615,11 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                     'label' => $fieldLabel,
                     'source'=> 'core',
                 ];
+            }
+
+            error_log('[AlertsManager] information_schema rows read: ' . $rowCount);
+            if (!empty($sample)) {
+                error_log('[AlertsManager] information_schema sample rows: ' . json_encode($sample));
             }
 
             if (method_exists($result, 'free')) {
