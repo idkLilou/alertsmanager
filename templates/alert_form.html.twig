@@ -77,9 +77,28 @@
             <label class="control-label">{{ __('Observed field', 'alertsmanager') }}</label>
             <select id="alert_observed_field" name="observed_field" class="form-select w-100">
                 <option value="">-- {{ __('Select', 'alertsmanager') }} --</option>
-                {% for field in item.fields._available_fields ?? [] %}
-                    <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
-                {% endfor %}
+                {% set grouped = item.fields._available_fields_grouped ?? {} %}
+                {% if grouped.core is defined and grouped.core|length > 0 %}
+                    <optgroup label="{{ __('Champs core GLPI', 'alertsmanager') }}">
+                        {% for field in grouped.core %}
+                            <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+                {% if grouped.glpi is defined and grouped.glpi|length > 0 %}
+                    <optgroup label="{{ __('Champs GLPI (tous)', 'alertsmanager') }}">
+                        {% for field in grouped.glpi %}
+                            <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+                {% if grouped.plugin_fields is defined and grouped.plugin_fields|length > 0 %}
+                    <optgroup label="{{ __('Champs plugin Fields', 'alertsmanager') }}">
+                        {% for field in grouped.plugin_fields %}
+                            <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
             </select>
         </div>
     </div>
