@@ -16,3 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Déclenchement sur champs de date GLPI et sur champs de date issus du plugin Fields.
 - Découverte automatique de tous les champs `date`, `datetime` et `timestamp` de la base via `information_schema`.
 - Regroupement des champs observés par source dans l’interface.
+
+## [1.1.0] - 2026-05-21
+
+### Added
+- Ajout d'une invitation calendrier (.ics) jointe aux e-mails d'alerte ; l'événement est désormais envoyé en tant que "toute la journée" (DTSTART;VALUE=DATE / DTEND = jour suivant) pour une meilleure intégration avec Outlook.
