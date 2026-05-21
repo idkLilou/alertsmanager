@@ -1,0 +1,164 @@
+{#
+ Alerts Manager form (Twig) - styled like News plugin
+#}
+
+{% extends "generic_show_form.html.twig" %}
+{% import 'components/form/fields_macros.html.twig' as fields %}
+
+{% set params = params ?? [] %}
+
+{% block form_fields %}
+
+    {% set base_option = { 'is_horizontal': false } %}
+    {% set base_option_small = { 'field_class': 'col-xxl-4 col-xl-6' }|merge(base_option) %}
+
+    {{ fields.textField(
+        'name',
+        item.fields.name,
+        __('Name', 'alertsmanager'),
+        base_option
+    ) }}
+
+    {{ fields.textareaField(
+        'description',
+        item.fields.description,
+        __('Description', 'alertsmanager'),
+        { 'full_width': true, 'enable_richtext': false }|merge(base_option)
+    ) }}
+
+    {{ fields.dropdownYesNo(
+        'is_active',
+        item.fields.is_active,
+        __('Active', 'alertsmanager'),
+        base_option
+    ) }}
+
+    <div class="hr-text">
+        <i class="ti ti-mail"></i>
+        <span>{{ __('Mail', 'alertsmanager') }}</span>
+    </div>
+
+    {{ fields.textField(
+        'mail_subject',
+        item.fields.mail_subject,
+        __('Mail subject', 'alertsmanager'),
+        base_option
+    ) }}
+
+    {{ fields.textareaField(
+        'mail_content',
+        item.fields.mail_content,
+        __('Mail content', 'alertsmanager'),
+        { 'full_width': true, 'enable_richtext': true }|merge(base_option)
+    ) }}
+
+    <div class="hr-text preview-section {{ item.isNewItem() ? "d-none" : "" }}">
+        <i class="ti ti-eye"></i>
+        <span>{{ __('Preview', 'alertsmanager') }}</span>
+    </div>
+
+    <div class="alert-preview"></div>
+
+    <div class="mt-3 {{ item.isNewItem() ? 'd-none' : '' }}">
+        <button type="button" class="btn btn-outline-primary alertsmanager-test-send" data-alert-id="{{ item.fields.id ?? 0 }}">
+            <i class="ti ti-send"></i>
+            <span>{{ __('Test send mail', 'alertsmanager') }}</span>
+        </button>
+        <div class="alertsmanager-test-send-result mt-2"></div>
+    </div>
+
+    <div class="hr-text mt-3">
+        <i class="ti ti-clock"></i>
+        <span>{{ __('Triggers', 'alertsmanager') }}</span>
+    </div>
+
+    <div class="row">
+        <div class="col-xxl-4 col-xl-6">
+            <label class="control-label">{{ __('Observed field', 'alertsmanager') }}</label>
+            <select id="alert_observed_field" name="observed_field" class="form-select w-100">
+                <option value="">-- {{ __('Select', 'alertsmanager') }} --</option>
+                {% set grouped = item.fields._available_fields_grouped ?? {} %}
+                {% if grouped.core is defined and grouped.core|length > 0 %}
+                    <optgroup label="{{ __('Champs core GLPI', 'alertsmanager') }}">
+                        {% for field in grouped.core %}
+                            <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+                {% if grouped.glpi is defined and grouped.glpi|length > 0 %}
+                    <optgroup label="{{ __('Champs GLPI (tous)', 'alertsmanager') }}">
+                        {% for field in grouped.glpi %}
+                            <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+                {% if grouped.plugin_fields is defined and grouped.plugin_fields|length > 0 %}
+                    <optgroup label="{{ __('Champs plugin Fields', 'alertsmanager') }}">
+                        {% for field in grouped.plugin_fields %}
+                            <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endif %}
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xxl-4 col-xl-6">
+            {{ fields.textField('trigger_months_before', item.fields.trigger_months_before, __('Months before', 'alertsmanager'), base_option_small) }}
+        </div>
+        <div class="col-xxl-4 col-xl-6">
+            {{ fields.textField('trigger_days_before', item.fields.trigger_days_before, __('Days before', 'alertsmanager'), base_option_small) }}
+        </div>
+    </div>
+
+    {{ fields.dropdownArrayField(
+        'frequency',
+        item.fields.frequency,
+        {
+            '': __('-- Select --', 'alertsmanager'),
+            'daily': __('Daily', 'alertsmanager'),
+            'weekly': __('Weekly', 'alertsmanager'),
+            'monthly': __('Monthly', 'alertsmanager')
+        },
+        __('Frequency', 'alertsmanager'),
+        base_option_small
+    ) }}
+
+    <div class="row" id="start_date_group">
+        <div class="col-xxl-4 col-xl-6">
+            <label class="control-label">{{ __('Start date', 'alertsmanager') }}</label>
+            <input type="date" id="trigger_start_date" name="trigger_start_date" class="form-control" value="{{ item.fields.trigger_start_date ?? '' }}" />
+        </div>
+    </div>
+
+    <div class="hr-text mt-3">
+        <i class="ti ti-target"></i>
+        <span>{{ __('Targets', 'alertsmanager') }}</span>
+    </div>
+
+    {# Targets: we render a simple selector block compatible with GLPI look #}
+    <div class="row">
+        <div class="col-xxl-4 col-xl-6">
+            <label class="control-label">{{ __('Target type', 'alertsmanager') }}</label>
+            <select id="alert_target_type" name="target_type" class="form-select w-100 alertsmanager-target-type">
+                <option value="">-- {{ __('Select', 'alertsmanager') }} --</option>
+                <option value="User" {{ item.fields.target_type == 'User' ? 'selected' : '' }}>{{ __('User', 'alertsmanager') }}</option>
+                <option value="Group" {{ item.fields.target_type == 'Group' ? 'selected' : '' }}>{{ __('Group', 'alertsmanager') }}</option>
+                <option value="Profile" {{ item.fields.target_type == 'Profile' ? 'selected' : '' }}>{{ __('Profile', 'alertsmanager') }}</option>
+            </select>
+        </div>
+
+        <div class="col-xxl-4 col-xl-6">
+            <label class="control-label">{{ __('Targets', 'alertsmanager') }}</label>
+            <select id="alert_targets" name="targets[]" class="form-select w-100" data-selected-targets="{{ item.fields._target_ids|default([])|join(',') }}">
+                <option value="">-- {{ __('Select', 'alertsmanager') }} --</option>
+                {# Server-side initial options for display when editing an existing alert #}
+                {% for t in item.fields._targets ?? [] %}
+                    <option value="{{ t.id }}" selected>{{ t.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+{% endblock %}
