@@ -331,6 +331,15 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         }, $this->fields['_targets']);
         $this->fields['target_type'] = $this->getTargetTypeForDisplay((int) ($this->fields['id'] ?? 0));
         $this->fields['_available_fields'] = self::getAvailableObservedFields();
+        $grouped = ['core' => [], 'glpi' => [], 'plugin_fields' => []];
+        foreach ($this->fields['_available_fields'] as $f) {
+            $src = $f['source'] ?? 'glpi';
+            if (!isset($grouped[$src])) {
+                $grouped[$src] = [];
+            }
+            $grouped[$src][] = $f;
+        }
+        $this->fields['_available_fields_grouped'] = $grouped;
 
         error_log('[AlertsManager] Fields loaded: _targets=' . count($this->fields['_targets']) . ', target_type=' . $this->fields['target_type'] . ', _available_fields=' . count($this->fields['_available_fields']));
 
@@ -524,13 +533,84 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 
     public static function getAvailableObservedFields(): array
     {
+        $fields = [];
+
+        error_log('[AlertsManager] getAvailableObservedFields() started');
+        $standardFields = self::getStandardDateFieldsFromInformationSchema();
+        $fallbackFields = self::getStandardDateFieldsFromItemtypes();
+        $fields = $standardFields + $fallbackFields;
+
+        error_log('[AlertsManager] Found ' . count($standardFields) . ' standard date fields from information_schema');
+        error_log('[AlertsManager] Found ' . count($fallbackFields) . ' fallback standard date fields from itemtypes');
+
+        // Add custom fields from plugin Fields
+        $customFields = self::getPluginFieldsDateFields();
+        $fields = array_merge($fields, $customFields);
+
+        error_log('[AlertsManager] Found ' . count($customFields) . ' custom date fields from plugin Fields');
+        error_log('[AlertsManager] Total: ' . count($fields) . ' date fields');
+
+        ksort($fields, SORT_STRING);
+
+        return array_values($fields);
+    }
+
+    private static function getStandardDateFieldsFromInformationSchema(): array
+    {
         /** @var DBmysql $DB */
         global $DB;
 
         $fields = [];
-        $dateTypes = ['date', 'datetime', 'timestamp'];
 
-        error_log('[AlertsManager] getAvailableObservedFields() started');
+        try {
+            $query = "SELECT table_name, column_name, data_type
+                      FROM information_schema.columns
+                      WHERE table_name LIKE 'glpi_%'
+                        AND LOWER(data_type) IN ('date', 'datetime', 'timestamp')
+                        AND table_name NOT LIKE 'glpi_plugin_fields_%'
+                      ORDER BY table_name, column_name";
+
+            $result = $DB->query($query);
+            if ($result === false) {
+                throw new RuntimeException('information_schema query failed');
+            }
+
+            while ($row = $result->fetch_assoc()) {
+                $tableName = trim((string) ($row['table_name'] ?? ''));
+                $columnName = trim((string) ($row['column_name'] ?? ''));
+
+                if ($tableName === '' || $columnName === '' || $columnName === 'id') {
+                    continue;
+                }
+
+                $fieldId = $tableName . '.' . $columnName;
+                if (isset($fields[$fieldId])) {
+                    continue;
+                }
+
+                $fieldLabel = self::buildObservedFieldLabelFromTable($tableName, $columnName);
+                error_log('[AlertsManager] Added field from information_schema: ' . $fieldId . ' => ' . $fieldLabel);
+                $fields[$fieldId] = [
+                    'id'    => $fieldId,
+                    'label' => $fieldLabel,
+                    'source'=> 'core',
+                ];
+            }
+
+            if (method_exists($result, 'free')) {
+                $result->free();
+            }
+        } catch (\Throwable $e) {
+            error_log('[AlertsManager] Error querying information_schema for date fields: ' . $e->getMessage());
+        }
+
+        return $fields;
+    }
+
+    private static function getStandardDateFieldsFromItemtypes(): array
+    {
+        $fields = [];
+        $dateTypes = ['date', 'datetime', 'timestamp'];
 
         $classesToCheck = [
             'Ticket',
@@ -559,62 +639,44 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 
         foreach ($classesToCheck as $itemtype) {
             if (!class_exists($itemtype)) {
-                error_log('[AlertsManager] Class not found: ' . $itemtype);
                 continue;
             }
 
             try {
                 $item = new $itemtype();
                 if (!method_exists($item, 'rawSearchOptions')) {
-                    error_log('[AlertsManager] No rawSearchOptions for: ' . $itemtype);
                     continue;
                 }
 
-                $searchOptions = (array) $item->rawSearchOptions();
-                error_log('[AlertsManager] ' . $itemtype . ' has ' . count($searchOptions) . ' raw search options');
-                
-                foreach ($searchOptions as $option) {
+                foreach ((array) $item->rawSearchOptions() as $option) {
                     $datatype = (string) ($option['datatype'] ?? '');
                     $field = (string) ($option['field'] ?? '');
                     $name = trim((string) ($option['name'] ?? ''));
 
-                    if (!in_array($datatype, $dateTypes, true)) {
-                        continue;
-                    }
-
-                    if ($field === '' || $field === 'id') {
+                    if (!in_array($datatype, $dateTypes, true) || $field === '' || $field === 'id') {
                         continue;
                     }
 
                     $tableName = self::getItemtypeTableName($itemtype);
-                    $fieldId = ($tableName !== '' ? $tableName : $itemtype) . '.' . $field;
+                    if ($tableName === '') {
+                        continue;
+                    }
 
+                    $fieldId = $tableName . '.' . $field;
                     if (!isset($fields[$fieldId])) {
-                        $fieldLabel = self::buildObservedFieldLabel($itemtype, $field, $name);
-                        error_log('[AlertsManager] Added field: ' . $fieldId . ' => ' . $fieldLabel);
                         $fields[$fieldId] = [
                             'id'    => $fieldId,
-                            'label' => $fieldLabel,
+                            'label' => self::buildObservedFieldLabel($itemtype, $field, $name),
+                            'source'=> 'glpi',
                         ];
                     }
                 }
             } catch (\Throwable $e) {
-                error_log('[AlertsManager] Error processing ' . $itemtype . ': ' . $e->getMessage());
+                error_log('[AlertsManager] Error processing fallback itemtype ' . $itemtype . ': ' . $e->getMessage());
             }
         }
 
-        error_log('[AlertsManager] Found ' . count($fields) . ' standard date fields');
-
-        // Add custom fields from plugin Fields
-        $customFields = self::getPluginFieldsDateFields();
-        $fields = array_merge($fields, $customFields);
-
-        error_log('[AlertsManager] Found ' . count($customFields) . ' custom date fields from plugin Fields');
-        error_log('[AlertsManager] Total: ' . count($fields) . ' date fields');
-
-        ksort($fields, SORT_STRING);
-
-        return array_values($fields);
+        return $fields;
     }
 
     private static function buildObservedFieldLabel(string $itemtype, string $field, string $name = ''): string
@@ -623,6 +685,37 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         $fieldLabel = $name !== '' ? $name : self::humanizeFieldName($field);
 
         return sprintf('%s - %s', $typeLabel, $fieldLabel);
+    }
+
+    private static function buildObservedFieldLabelFromTable(string $tableName, string $fieldName): string
+    {
+        return sprintf(
+            '%s - %s',
+            self::getTableLabel($tableName),
+            self::humanizeFieldName($fieldName)
+        );
+    }
+
+    private static function getTableLabel(string $tableName): string
+    {
+        $tableName = trim($tableName);
+        if ($tableName === '') {
+            return __('Unknown');
+        }
+
+        if (function_exists('getItemTypeForTable')) {
+            try {
+                $itemtype = (string) getItemTypeForTable($tableName);
+                if ($itemtype !== '') {
+                    return self::getItemtypeLabel($itemtype);
+                }
+            } catch (\Throwable $e) {
+                // Fallback below.
+            }
+        }
+
+        $baseName = preg_replace('/^glpi_/', '', $tableName) ?? $tableName;
+        return self::humanizeFieldName($baseName);
     }
 
     private static function getItemtypeTableName(string $itemtype): string
@@ -734,6 +827,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                         $fields[$fieldId] = [
                             'id'    => $fieldId,
                             'label' => $finalLabel,
+                            'source'=> 'plugin_fields',
                         ];
                     }
                 }
