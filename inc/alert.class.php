@@ -35,6 +35,10 @@ if (!defined('GLPI_ROOT')) {
 
 use Glpi\Application\View\TemplateRenderer;
 
+require_once __DIR__ . '/alert_trigger_engine.class.php';
+require_once __DIR__ . '/alert_mailer.class.php';
+require_once __DIR__ . '/alert_target.class.php';
+
 class PluginAlertsmanagerAlert extends CommonDBTM
 {
     public static $rightname = 'plugin_alertsmanager_alert';
@@ -73,6 +77,115 @@ class PluginAlertsmanagerAlert extends CommonDBTM
     public static function canUpdate(): bool
     {
         return Session::haveRight(self::$rightname, UPDATE) || Session::haveRight('config', UPDATE);
+    }
+
+    public static function cronInfo($name)
+    {
+        return match ($name) {
+            'runalerts' => [
+                'description' => __('Evaluate alerts and send notifications', 'alertsmanager'),
+            ],
+            default => [],
+        };
+    }
+
+    public static function cronRunalerts(CronTask $task): int
+    {
+        $now = new DateTimeImmutable('now');
+        $alerts = new self();
+        $iterator = $alerts->find(['is_active' => 1]);
+
+        self::logCronDiagnostic($task, sprintf('[alertsmanager] cronRunalerts start at %s', $now->format(DateTimeInterface::ATOM)));
+
+        $totalDue = 0;
+        $activeAlerts = is_countable($iterator) ? count($iterator) : 0;
+        self::logCronDiagnostic($task, sprintf('[alertsmanager] Active alerts found: %d', $activeAlerts));
+
+        foreach ($iterator as $row) {
+            $alert = new self();
+            if (!$alert->getFromDB((int) ($row['id'] ?? 0))) {
+                self::logCronDiagnostic($task, sprintf('[alertsmanager] Skipping alert row without DB record: %s', json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)));
+                continue;
+            }
+
+            self::logCronDiagnostic($task, sprintf(
+                '[alertsmanager] Evaluating alert #%d "%s"',
+                (int) $alert->getID(),
+                (string) ($alert->fields['name'] ?? '')
+            ));
+
+            try {
+                $evaluation = $alert->getTriggerEvaluation($now);
+            } catch (Throwable $e) {
+                self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert #%d evaluation exception: %s', (int) $alert->getID(), $e->getMessage()));
+                continue;
+            }
+
+            if (!($evaluation['success'] ?? false)) {
+                self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert #%d evaluation failed', (int) $alert->getID()));
+                foreach (($evaluation['errors'] ?? []) as $error) {
+                    self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert %d: %s', (int) $alert->getID(), $error));
+                }
+                continue;
+            }
+
+            $items = (array) ($evaluation['items'] ?? []);
+            self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert #%d due items: %d', (int) $alert->getID(), count($items)));
+
+            foreach ($items as $item) {
+                $context = [
+                    'event'                   => 'cron_run',
+                    'trigger_itemtype'        => (string) ($item['itemtype'] ?? ''),
+                    'trigger_items_id'        => (int) ($item['items_id'] ?? 0),
+                    'trigger_field'           => (string) ($item['field'] ?? ''),
+                    'trigger_field_value'     => (string) ($item['field_value'] ?? ''),
+                    'trigger_due_date'        => (string) ($item['due_date'] ?? ''),
+                    'trigger_item_name'       => (string) ($item['item_name'] ?? ''),
+                    'trigger_item_url'        => (string) ($item['item_url'] ?? ''),
+                    'trigger_item_type_label' => (string) ($item['item_type_label'] ?? ''),
+                    'entity_name'             => (string) ($item['entity_name'] ?? ''),
+                ];
+
+                self::logCronDiagnostic($task, sprintf(
+                    '[alertsmanager] Alert #%d item due: %s #%d field=%s value=%s due=%s entity=%s',
+                    (int) $alert->getID(),
+                    (string) ($item['item_type_label'] ?? (string) ($item['itemtype'] ?? '')),
+                    (int) ($item['items_id'] ?? 0),
+                    (string) ($item['field'] ?? ''),
+                    (string) ($item['field_value'] ?? ''),
+                    (string) ($item['due_date'] ?? ''),
+                    (string) ($item['entity_name'] ?? '')
+                ));
+
+                try {
+                    $result = $alert->sendMail($context);
+                } catch (Throwable $e) {
+                    self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert #%d send exception: %s', (int) $alert->getID(), $e->getMessage()));
+                    continue;
+                }
+                if (($result['success'] ?? false) === true) {
+                    $totalDue++;
+                    $task->addVolume(1);
+                    self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert #%d item sent successfully to %s recipient(s)', (int) $alert->getID(), (string) count((array) ($result['recipients'] ?? []))));
+                    continue;
+                }
+
+                self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert #%d item send failed', (int) $alert->getID()));
+                foreach (($result['errors'] ?? []) as $error) {
+                    self::logCronDiagnostic($task, sprintf('[alertsmanager] Alert %d send failed: %s', (int) $alert->getID(), $error));
+                }
+            }
+        }
+
+        self::logCronDiagnostic($task, sprintf('[alertsmanager] cronRunalerts end: %d item(s) sent', $totalDue));
+
+        return $totalDue > 0 ? 1 : 0;
+    }
+
+    private static function logCronDiagnostic(CronTask $task, string $message): void
+    {
+        $task->log($message);
+        error_log($message);
     }
 
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
@@ -182,6 +295,19 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         }
 
         return PluginAlertsmanagerAlertMailer::sendAlertItem($this, $context);
+    }
+
+    public function getTriggerEvaluation(?DateTimeInterface $now = null): array
+    {
+        if (!isset($this->fields['id'])) {
+            return [
+                'success' => false,
+                'errors'  => ['Alert is not loaded'],
+                'items'   => [],
+            ];
+        }
+
+        return PluginAlertsmanagerAlertTriggerEngine::evaluateAlert((int) $this->fields['id'], $now);
     }
 
     public function showForm($ID, $options = [])
