@@ -52,6 +52,7 @@ class PluginAlertsmanagerAlertMailer
 
     public static function sendAlertItem(PluginAlertsmanagerAlert $alert, array $context = []): array
     {
+        $context = self::buildNotificationContext($alert, $context);
         $recipientEmails = self::getRecipientEmails($alert);
         if ($recipientEmails === []) {
             return [
@@ -67,6 +68,7 @@ class PluginAlertsmanagerAlertMailer
         if ($subject === '') {
             $subject = trim((string) ($alert->fields['name'] ?? ''));
         }
+        $subject = self::buildSubject($alert, $subject, $context);
 
         $bodyText = self::renderTemplate((string) ($alert->fields['mail_content'] ?? ''), $context);
         $bodyText = trim($bodyText);
@@ -74,7 +76,7 @@ class PluginAlertsmanagerAlertMailer
             $bodyText = trim((string) ($alert->fields['description'] ?? ''));
         }
 
-        $bodyHtml = nl2br(htmlescape($bodyText));
+        [$bodyText, $bodyHtml] = self::buildBody($alert, $bodyText, $context);
 
         $sent = 0;
         $errors = [];
@@ -256,5 +258,139 @@ class PluginAlertsmanagerAlertMailer
         }
 
         return strtr($value, $replacements);
+    }
+
+    private static function buildNotificationContext(PluginAlertsmanagerAlert $alert, array $context): array
+    {
+        $context['alert_name'] = trim((string) ($alert->fields['name'] ?? ''));
+        $context['alert_subject'] = trim((string) ($alert->fields['mail_subject'] ?? ''));
+
+        if (!isset($context['trigger_item_name'])) {
+            $context['trigger_item_name'] = trim((string) ($context['trigger_item_name'] ?? ''));
+        }
+
+        if (!isset($context['trigger_item_url'])) {
+            $context['trigger_item_url'] = trim((string) ($context['trigger_item_url'] ?? ''));
+        }
+
+        if (!isset($context['trigger_item_type_label'])) {
+            $context['trigger_item_type_label'] = trim((string) ($context['trigger_item_type_label'] ?? ''));
+        }
+
+        if (!isset($context['entity_name'])) {
+            $context['entity_name'] = trim((string) ($context['entity_name'] ?? ''));
+        }
+
+        return $context;
+    }
+
+    private static function buildSubject(PluginAlertsmanagerAlert $alert, string $subject, array $context): string
+    {
+        $prefix = sprintf('[Alerte %s]', trim((string) ($alert->fields['name'] ?? '')));
+        $subject = trim($subject);
+
+        if ($subject === '') {
+            return $prefix;
+        }
+
+        return $prefix . ' ' . $subject;
+    }
+
+    private static function buildBody(PluginAlertsmanagerAlert $alert, string $bodyText, array $context): array
+    {
+        $bodyText = trim($bodyText);
+        $itemName = trim((string) ($context['trigger_item_name'] ?? ''));
+        $itemUrl = trim((string) ($context['trigger_item_url'] ?? ''));
+        $entityName = trim((string) ($context['entity_name'] ?? ''));
+        $alertName = trim((string) ($alert->fields['name'] ?? ''));
+
+        $headerParts = [];
+        if ($itemName !== '') {
+            $headerParts[] = sprintf('[Alerte sur : %s]', $itemName);
+        } else {
+            $headerParts[] = sprintf('[Alerte %s]', $alertName);
+        }
+
+        if ($entityName !== '') {
+            $headerParts[] = sprintf('Entite: %s', $entityName);
+        }
+
+        if ($itemUrl !== '') {
+            $headerParts[] = $itemUrl;
+        }
+
+        $headerText = implode(' - ', $headerParts);
+        $headerHtml = '<div style="margin:0 0 16px;padding:16px 18px;border:1px solid #dbe1ea;border-radius:14px;background:#f8fbff;">';
+        $headerHtml .= '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#637085;">Alerte</div>';
+        $headerHtml .= '<div style="margin-top:6px;font-size:20px;line-height:1.35;font-weight:700;color:#1f2937;">' . htmlescape($headerParts[0]) . '</div>';
+
+        if ($entityName !== '' || $alertName !== '') {
+            $headerHtml .= '<div style="margin-top:8px;font-size:13px;line-height:1.5;color:#4b5563;">';
+            if ($entityName !== '') {
+                $headerHtml .= '<span style="display:inline-block;margin:0 8px 8px 0;padding:3px 8px;border-radius:999px;background:#e8eef7;color:#29415f;font-weight:600;">' . htmlescape(sprintf('Entite: %s', $entityName)) . '</span>';
+            }
+            if ($alertName !== '') {
+                $headerHtml .= '<span style="display:inline-block;margin:0 8px 8px 0;padding:3px 8px;border-radius:999px;background:#eef6ea;color:#315a27;font-weight:600;">' . htmlescape($alertName) . '</span>';
+            }
+            $headerHtml .= '</div>';
+        }
+
+        if ($itemUrl !== '') {
+            $label = $itemName !== '' ? $itemName : $itemUrl;
+            $headerHtml .= '<div style="margin-top:10px;">';
+            $headerHtml .= '<a href="' . htmlescape($itemUrl) . '" target="_blank" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#0f62fe;color:#ffffff;text-decoration:none;font-weight:600;">';
+            $headerHtml .= htmlescape(sprintf('Ouvrir %s', $label));
+            $headerHtml .= '</a>';
+            $headerHtml .= '</div>';
+        }
+
+        $headerHtml .= '</div>';
+
+        $contentHtml = self::renderMailContentHtml($bodyText);
+        $contentText = self::renderMailContentText($bodyText);
+
+        $html = $headerHtml;
+        if ($contentHtml !== '') {
+            $html .= '<div style="padding:0 2px;line-height:1.6;color:#1f2937;">' . $contentHtml . '</div>';
+        }
+
+        $text = $headerText;
+        if ($contentText !== '') {
+            $text .= "\n\n" . $contentText;
+        }
+
+        return [$text, $html];
+    }
+
+    private static function renderMailContentHtml(string $content): string
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return '';
+        }
+
+        $decoded = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (strip_tags($decoded) !== $decoded) {
+            return $decoded;
+        }
+
+        return nl2br(htmlescape($decoded));
+    }
+
+    private static function renderMailContentText(string $content): string
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return '';
+        }
+
+        $decoded = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = preg_replace('/<\s*br\s*\/?\s*>/i', "\n", $decoded);
+        $decoded = preg_replace('/<\/p\s*>/i', "\n\n", $decoded);
+        $decoded = strip_tags($decoded);
+        $decoded = preg_replace('/\r\n?/', "\n", (string) $decoded);
+        $decoded = preg_replace('/\n{3,}/', "\n\n", (string) $decoded);
+
+        return trim((string) $decoded);
     }
 }

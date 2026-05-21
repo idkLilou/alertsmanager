@@ -43,7 +43,16 @@ try {
         exit;
     }
 
-    $result = $alert->sendMail(['event' => 'manual_test']);
+    $context = [
+        'event'                 => 'manual_test',
+        'trigger_item_name'     => trim((string) ($_POST['test_trigger_item_name'] ?? '')),
+        'trigger_item_url'      => trim((string) ($_POST['test_trigger_item_url'] ?? '')),
+        'entity_name'           => trim((string) ($_POST['test_entity_name'] ?? '')),
+        'trigger_field'         => trim((string) ($_POST['test_trigger_field'] ?? '')),
+        'trigger_field_value'   => trim((string) ($_POST['test_trigger_field_value'] ?? '')),
+    ];
+
+    $result = $alert->sendMail($context);
     echo json_encode([
         'success'    => (bool) ($result['success'] ?? false),
         'sent'       => (int) ($result['sent'] ?? 0),
