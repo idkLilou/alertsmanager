@@ -57,6 +57,19 @@ function plugin_init_alertsmanager()
         $PLUGIN_HOOKS['add_css']['alertsmanager']          = 'css/styles.css';
         $PLUGIN_HOOKS['add_javascript']['alertsmanager'][] = 'js/alertsmanager.js';
 
+        CronTask::register(
+            PluginAlertsmanagerAlert::class,
+            'runalerts',
+            DAY_TIMESTAMP,
+            [
+                'allowmode'     => CronTask::MODE_INTERNAL | CronTask::MODE_EXTERNAL,
+                'state'         => CronTask::STATE_WAITING,
+                'hourmin'       => 0,
+                'hourmax'       => 24,
+                'logs_lifetime' => 30,
+            ]
+        );
+
         if (Session::haveRight('plugin_alertsmanager_alert', READ) || Session::haveRight('config', UPDATE)) {
             $PLUGIN_HOOKS['menu_toadd']['alertsmanager'] = [
                 'tools' => 'PluginAlertsmanagerAlert',

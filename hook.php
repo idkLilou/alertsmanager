@@ -33,6 +33,10 @@ function plugin_alertsmanager_install()
     /** @var DBmysql $DB */
     global $DB;
 
+    if (!class_exists('PluginAlertsmanagerAlert')) {
+        include_once __DIR__ . '/inc/alert.class.php';
+    }
+
     $migration = new Migration(Plugin::getInfo('alertsmanager', 'version'));
 
     $default_charset   = DBConnection::getDefaultCharset();
@@ -142,6 +146,19 @@ function plugin_alertsmanager_install()
         }
     }
 
+    CronTask::register(
+        PluginAlertsmanagerAlert::class,
+        'runalerts',
+        DAY_TIMESTAMP,
+        [
+            'allowmode'    => CronTask::MODE_INTERNAL | CronTask::MODE_EXTERNAL,
+            'state'        => CronTask::STATE_WAITING,
+            'hourmin'      => 0,
+            'hourmax'      => 24,
+            'logs_lifetime'=> 30,
+        ]
+    );
+
     $migration->displayMessage("Installation completed successfully");
     return true;
 }
@@ -150,6 +167,8 @@ function plugin_alertsmanager_uninstall()
 {
     /** @var DBmysql $DB */
     global $DB;
+
+    CronTask::unregister('alertsmanager');
 
     $tables = [
         'glpi_plugin_alertsmanager_alert_triggers',
