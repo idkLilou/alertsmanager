@@ -30,7 +30,7 @@
 
 use function Safe\define;
 
-define('PLUGIN_ALERTSMANAGER_VERSION', '1.1.0');
+define('PLUGIN_ALERTSMANAGER_VERSION', '1.2.0');
 
 // Minimal GLPI version, inclusive
 define('PLUGIN_ALERTSMANAGER_MIN_GLPI', '11.0.0');

@@ -77,7 +77,7 @@ Le plugin expose une interface GLPI dédiée dans le menu **Outils**.
 
 ## État actuel
 
-Version plugin : **1.0.0** (*release*)
+Version plugin : **1.2.0** (*release*)
 
 Compatibilité déclarée :
 - GLPI min : `11.0.0`
