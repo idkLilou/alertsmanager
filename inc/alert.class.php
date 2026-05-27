@@ -358,11 +358,24 @@ class PluginAlertsmanagerAlert extends CommonDBTM
             $this->fields = array_merge($this->fields, $trigger);
         }
 
-        $this->fields['_targets'] = $this->getTargetsForDisplay((int) ($this->fields['id'] ?? 0));
-        $this->fields['_target_ids'] = array_map(static function (array $target): int {
-            return (int) ($target['id'] ?? 0);
-        }, $this->fields['_targets']);
-        $this->fields['target_type'] = $this->getTargetTypeForDisplay((int) ($this->fields['id'] ?? 0));
+        $this->fields['_targets_by_type'] = $this->getTargetsByTypeForDisplay((int) ($this->fields['id'] ?? 0));
+        $this->fields['_target_types'] = array_keys(array_filter($this->fields['_targets_by_type'], static function (array $targets): bool {
+            return !empty($targets);
+        }));
+        $this->fields['_target_ids_by_type'] = [];
+        $this->fields['_targets'] = [];
+        $this->fields['_target_ids'] = [];
+        foreach ($this->fields['_targets_by_type'] as $type => $targets) {
+            $this->fields['_target_ids_by_type'][$type] = array_map(static function (array $target): int {
+                return (int) ($target['id'] ?? 0);
+            }, $targets);
+            foreach ($targets as $target) {
+                $this->fields['_targets'][] = $target;
+                $this->fields['_target_ids'][] = (int) ($target['id'] ?? 0);
+            }
+        }
+        $this->fields['_target_ids'] = array_values(array_filter(array_unique($this->fields['_target_ids'])));
+        $this->fields['target_type'] = $this->fields['_target_types'][0] ?? '';
         $this->fields['_available_fields'] = self::getAvailableObservedFields();
         $grouped = ['core' => [], 'glpi' => [], 'plugin_fields' => []];
         foreach ($this->fields['_available_fields'] as $f) {
@@ -665,76 +678,106 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return $fields;
     }
 
-    private static function getStandardDateFieldsFromItemtypes(): array
+    private function getTargetsByTypeForDisplay(int $alertId): array
     {
-        $fields = [];
-        $dateTypes = ['date', 'datetime', 'timestamp'];
+        if ($alertId <= 0) {
+            return [
+                'User'    => [],
+                'Group'   => [],
+                'Profile' => [],
+            ];
+        }
 
-        $classesToCheck = [
-            'Ticket',
-            'Problem',
-            'Change',
-            'Contract',
-            'SoftwareLicense',
-            'Computer',
-            'Printer',
-            'Monitor',
-            'NetworkEquipment',
-            'Peripheral',
-            'Project',
-            'ProjectTask',
-            'User',
-            'Group',
-            'Profile',
-            'Entity',
-            'Location',
-            'Supplier',
-            'Manufacturer',
-            'DeviceMemory',
-            'DeviceProcessor',
-            'DeviceFirmware',
+        /** @var DBmysql $DB */
+        global $DB;
+
+        $targetsByType = [
+            'User'    => [],
+            'Group'   => [],
+            'Profile' => [],
         ];
 
-        foreach ($classesToCheck as $itemtype) {
-            if (!class_exists($itemtype)) {
+        $appendTarget = static function (array &$targets, int $id, string $label): void {
+            $label = trim($label);
+            if ($id > 0 && $label !== '') {
+                $targets[] = [
+                    'id'    => $id,
+                    'label' => $label,
+                ];
+            }
+        };
+
+        $links = $DB->request([
+            'SELECT' => ['users_id'],
+            'FROM'   => 'glpi_plugin_alertsmanager_alert_users',
+            'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+        ]);
+        foreach ($links as $link) {
+            $userId = (int) ($link['users_id'] ?? 0);
+            if ($userId <= 0) {
                 continue;
             }
 
-            try {
-                $item = new $itemtype();
-                if (!method_exists($item, 'rawSearchOptions')) {
-                    continue;
-                }
+            $userRes = $DB->request([
+                'SELECT' => ['id', 'firstname', 'name'],
+                'FROM'   => 'glpi_users',
+                'WHERE'  => ['id' => $userId],
+                'LIMIT'  => 1,
+            ]);
 
-                foreach ((array) $item->rawSearchOptions() as $option) {
-                    $datatype = (string) ($option['datatype'] ?? '');
-                    $field = (string) ($option['field'] ?? '');
-                    $name = trim((string) ($option['name'] ?? ''));
-
-                    if (!in_array($datatype, $dateTypes, true) || $field === '' || $field === 'id') {
-                        continue;
-                    }
-
-                    $tableName = self::getItemtypeTableName($itemtype);
-                    if ($tableName === '') {
-                        continue;
-                    }
-
-                    $fieldId = $tableName . '.' . $field;
-                    if (!isset($fields[$fieldId])) {
-                        $fields[$fieldId] = [
-                            'id'    => $fieldId,
-                            'label' => self::buildObservedFieldLabel($itemtype, $field, $name),
-                            'source'=> 'glpi',
-                        ];
-                    }
-                }
-            } catch (\Throwable $e) {
-                error_log('[AlertsManager] Error processing fallback itemtype ' . $itemtype . ': ' . $e->getMessage());
+            foreach ($userRes as $user) {
+                $label = trim((string) ($user['firstname'] ?? '') . ' ' . (string) ($user['name'] ?? ''));
+                $appendTarget($targetsByType['User'], $userId, $label !== '' ? $label : (string) ($user['name'] ?? ''));
             }
         }
 
-        return $fields;
+        $links = $DB->request([
+            'SELECT' => ['groups_id'],
+            'FROM'   => 'glpi_plugin_alertsmanager_alert_groups',
+            'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+        ]);
+        foreach ($links as $link) {
+            $groupId = (int) ($link['groups_id'] ?? 0);
+            if ($groupId <= 0) {
+                continue;
+            }
+
+            $groupRes = $DB->request([
+                'SELECT' => ['id', 'name'],
+                'FROM'   => 'glpi_groups',
+                'WHERE'  => ['id' => $groupId],
+                'LIMIT'  => 1,
+            ]);
+
+            foreach ($groupRes as $group) {
+                $appendTarget($targetsByType['Group'], $groupId, (string) ($group['name'] ?? ''));
+            }
+        }
+
+        $links = $DB->request([
+            'SELECT' => ['profiles_id'],
+            'FROM'   => 'glpi_plugin_alertsmanager_alert_profiles',
+            'WHERE'  => ['plugin_alertsmanager_alerts_id' => $alertId],
+        ]);
+        foreach ($links as $link) {
+            $profileId = (int) ($link['profiles_id'] ?? 0);
+            if ($profileId <= 0) {
+                continue;
+            }
+
+            $profileRes = $DB->request([
+                'SELECT' => ['id', 'name'],
+                'FROM'   => 'glpi_profiles',
+                'WHERE'  => ['id' => $profileId],
+                'LIMIT'  => 1,
+            ]);
+
+            foreach ($profileRes as $profile) {
+                $appendTarget($targetsByType['Profile'], $profileId, (string) ($profile['name'] ?? ''));
+            }
+        }
+
+        return $targetsByType;
     }
 
     private static function buildObservedFieldLabel(string $itemtype, string $field, string $name = ''): string
