@@ -120,7 +120,8 @@
     box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
 }
 
-.plugin-alertsmanager-page .form-control[multiple] {
+.plugin-alertsmanager-page .form-control[multiple],
+.plugin-alertsmanager-page .form-select[multiple] {
     min-height: 120px;
 }
 

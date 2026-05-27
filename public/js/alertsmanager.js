@@ -186,7 +186,6 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
                 const data = await resp.json();
                 console.log('[AlertsManager] received', data.length, 'targets');
-                targetsSelect.appendChild(new Option('-- Select --', ''));
                 data.forEach(item => {
                     const optionEl = document.createElement('option');
                     optionEl.value = item.id;
