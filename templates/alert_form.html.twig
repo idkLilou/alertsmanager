@@ -137,23 +137,44 @@
         <span>{{ __('Targets', 'alertsmanager') }}</span>
     </div>
 
-    {# Targets: we render a simple selector block compatible with GLPI look #}
+    {% set target_types = item.fields._target_types|default([]) %}
+    {% set targets_by_type = item.fields._targets_by_type|default({}) %}
+
     <div class="row">
         <div class="col-xxl-4 col-xl-6">
-            <label class="control-label">{{ __('Target type', 'alertsmanager') }}</label>
-            <select id="alert_target_type" name="target_type" class="form-select w-100 alertsmanager-target-type">
-                <option value="">-- {{ __('Select', 'alertsmanager') }} --</option>
-                <option value="User" {{ item.fields.target_type == 'User' ? 'selected' : '' }}>{{ __('User', 'alertsmanager') }}</option>
-                <option value="Group" {{ item.fields.target_type == 'Group' ? 'selected' : '' }}>{{ __('Group', 'alertsmanager') }}</option>
-                <option value="Profile" {{ item.fields.target_type == 'Profile' ? 'selected' : '' }}>{{ __('Profile', 'alertsmanager') }}</option>
+            <label class="control-label">{{ __('Target types', 'alertsmanager') }}</label>
+            <select id="alert_target_types" name="target_types[]" class="form-select w-100 alertsmanager-target-types" multiple>
+                <option value="User" {{ 'User' in target_types ? 'selected' : '' }}>{{ __('User', 'alertsmanager') }}</option>
+                <option value="Group" {{ 'Group' in target_types ? 'selected' : '' }}>{{ __('Group', 'alertsmanager') }}</option>
+                <option value="Profile" {{ 'Profile' in target_types ? 'selected' : '' }}>{{ __('Profile', 'alertsmanager') }}</option>
+            </select>
+            <small class="form-text text-muted">{{ __('Select one or more target types, then choose the entities for each type.', 'alertsmanager') }}</small>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-xxl-4 col-xl-6 alertsmanager-target-block {{ 'User' in target_types ? '' : 'd-none' }}" data-target-type="User">
+            <label class="control-label">{{ __('Users', 'alertsmanager') }}</label>
+            <select id="alert_targets_user" name="targets[User][]" class="form-select w-100 alertsmanager-target-select" multiple data-target-type="User" data-selected-targets="{{ item.fields._target_ids_by_type.User|default([])|join(',') }}">
+                {% for t in targets_by_type.User ?? [] %}
+                    <option value="{{ t.id }}" selected>{{ t.label }}</option>
+                {% endfor %}
             </select>
         </div>
 
-        <div class="col-xxl-4 col-xl-6">
-            <label class="control-label">{{ __('Targets', 'alertsmanager') }}</label>
-            <select id="alert_targets" name="targets[]" class="form-select w-100" multiple data-selected-targets="{{ item.fields._target_ids|default([])|join(',') }}">
-                {# Server-side initial options for display when editing an existing alert #}
-                {% for t in item.fields._targets ?? [] %}
+        <div class="col-xxl-4 col-xl-6 alertsmanager-target-block {{ 'Group' in target_types ? '' : 'd-none' }}" data-target-type="Group">
+            <label class="control-label">{{ __('Groups', 'alertsmanager') }}</label>
+            <select id="alert_targets_group" name="targets[Group][]" class="form-select w-100 alertsmanager-target-select" multiple data-target-type="Group" data-selected-targets="{{ item.fields._target_ids_by_type.Group|default([])|join(',') }}">
+                {% for t in targets_by_type.Group ?? [] %}
+                    <option value="{{ t.id }}" selected>{{ t.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-xxl-4 col-xl-6 alertsmanager-target-block {{ 'Profile' in target_types ? '' : 'd-none' }}" data-target-type="Profile">
+            <label class="control-label">{{ __('Profiles', 'alertsmanager') }}</label>
+            <select id="alert_targets_profile" name="targets[Profile][]" class="form-select w-100 alertsmanager-target-select" multiple data-target-type="Profile" data-selected-targets="{{ item.fields._target_ids_by_type.Profile|default([])|join(',') }}">
+                {% for t in targets_by_type.Profile ?? [] %}
                     <option value="{{ t.id }}" selected>{{ t.label }}</option>
                 {% endfor %}
             </select>

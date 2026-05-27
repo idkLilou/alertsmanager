@@ -125,6 +125,10 @@
     min-height: 120px;
 }
 
+.plugin-alertsmanager-page .alertsmanager-target-block {
+    margin-top: 0.5rem;
+}
+
 .plugin-alertsmanager-page textarea.form-control {
     resize: vertical;
     min-height: 100px;

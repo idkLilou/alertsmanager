@@ -80,12 +80,46 @@ function alertsmanager_save_trigger(int $alertId, array $input = []): void {
 /**
  * Save target relations (users/groups/profiles)
  */
-function alertsmanager_save_targets(int $alertId, string $type, array $targets = []) {
+function alertsmanager_normalize_target_ids($values): array {
+    if (!is_array($values)) {
+        $values = [$values];
+    }
+
+    $values = array_map('intval', $values);
+    $values = array_filter($values, static function (int $value): bool {
+        return $value > 0;
+    });
+
+    return array_values(array_unique($values));
+}
+
+function alertsmanager_get_targets_by_type(array $input = []): array {
+    $targetsByType = [
+        'User'    => [],
+        'Group'   => [],
+        'Profile' => [],
+    ];
+
+    $targets = $input['targets'] ?? [];
+    if (is_array($targets)) {
+        foreach (array_keys($targetsByType) as $type) {
+            $targetsByType[$type] = alertsmanager_normalize_target_ids($targets[$type] ?? []);
+        }
+    } elseif (!empty($input['target_type'])) {
+        $legacyType = (string) $input['target_type'];
+        if (array_key_exists($legacyType, $targetsByType)) {
+            $targetsByType[$legacyType] = alertsmanager_normalize_target_ids($targets);
+        }
+    }
+
+    return $targetsByType;
+}
+
+function alertsmanager_save_targets(int $alertId, array $input = []) {
     /** @var DBmysql $DB */
     global $DB;
 
-    // Normalize targets to integers
-    $targets = array_map('intval', $targets);
+    $targetsByType = alertsmanager_get_targets_by_type($input);
 
     // Delete existing relations for this alert in all target tables
     $tables = [
@@ -99,40 +133,42 @@ function alertsmanager_save_targets(int $alertId, string $type, array $targets =
         ]);
     }
 
-    if (empty($targets)) {
-        return;
-    }
-
     $now = date('Y-m-d H:i:s');
 
-    switch ($type) {
-        case 'User':
-            foreach ($targets as $u) {
-                $DB->insert('glpi_plugin_alertsmanager_alert_users', [
-                    'plugin_alertsmanager_alerts_id' => $alertId,
-                    'users_id'                        => $u,
-                    'date_creation'                   => $now,
-                ]);
-            }
-            break;
-        case 'Group':
-            foreach ($targets as $g) {
-                $DB->insert('glpi_plugin_alertsmanager_alert_groups', [
-                    'plugin_alertsmanager_alerts_id' => $alertId,
-                    'groups_id'                      => $g,
-                    'date_creation'                  => $now,
-                ]);
-            }
-            break;
-        case 'Profile':
-            foreach ($targets as $p) {
-                $DB->insert('glpi_plugin_alertsmanager_alert_profiles', [
-                    'plugin_alertsmanager_alerts_id' => $alertId,
-                    'profiles_id'                    => $p,
-                    'date_creation'                  => $now,
-                ]);
-            }
-            break;
+    foreach ($targetsByType as $type => $targets) {
+        if (empty($targets)) {
+            continue;
+        }
+
+        switch ($type) {
+            case 'User':
+                foreach ($targets as $u) {
+                    $DB->insert('glpi_plugin_alertsmanager_alert_users', [
+                        'plugin_alertsmanager_alerts_id' => $alertId,
+                        'users_id'                        => $u,
+                        'date_creation'                   => $now,
+                    ]);
+                }
+                break;
+            case 'Group':
+                foreach ($targets as $g) {
+                    $DB->insert('glpi_plugin_alertsmanager_alert_groups', [
+                        'plugin_alertsmanager_alerts_id' => $alertId,
+                        'groups_id'                      => $g,
+                        'date_creation'                  => $now,
+                    ]);
+                }
+                break;
+            case 'Profile':
+                foreach ($targets as $p) {
+                    $DB->insert('glpi_plugin_alertsmanager_alert_profiles', [
+                        'plugin_alertsmanager_alerts_id' => $alertId,
+                        'profiles_id'                    => $p,
+                        'date_creation'                  => $now,
+                    ]);
+                }
+                break;
+        }
     }
 }
 
@@ -148,7 +184,7 @@ if (isset($_POST['update'])) {
         );
         alertsmanager_save_trigger((int) $_POST['id'], $_POST);
         // Save targets relations
-        alertsmanager_save_targets((int) $_POST['id'], $_POST['target_type'] ?? '', $_POST['targets'] ?? []);
+        alertsmanager_save_targets((int) $_POST['id'], $_POST);
     }
     Html::back();
 } elseif (isset($_POST['add'])) {
@@ -164,7 +200,7 @@ if (isset($_POST['update'])) {
 
         // Save targets relations
     alertsmanager_save_trigger((int) $newID, $_POST);
-        alertsmanager_save_targets((int) $newID, $_POST['target_type'] ?? '', $_POST['targets'] ?? []);
+        alertsmanager_save_targets((int) $newID, $_POST);
 
         if ($_SESSION['glpibackcreated']) {
             Html::redirect($alert->getLinkURL());

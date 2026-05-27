@@ -46,14 +46,14 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                 }
 
                 const observedField = document.getElementById('alert_observed_field');
-                const targetType = document.getElementById('alert_target_type');
-                const targetsSelect = document.getElementById('alert_targets');
+                const targetTypes = document.getElementById('alert_target_types');
+                const targetSelects = document.querySelectorAll('.alertsmanager-target-select');
 
                 console.log('[AlertsManager] observed_field element:', observedField);
-                console.log('[AlertsManager] target_type element:', targetType);
-                console.log('[AlertsManager] targets element:', targetsSelect);
+                console.log('[AlertsManager] target_types element:', targetTypes);
+                console.log('[AlertsManager] target select count:', targetSelects.length);
 
-                if (!observedField || !targetType || !targetsSelect) {
+                if (!observedField || !targetTypes || targetSelects.length === 0) {
                     return false;
                 }
 
@@ -71,17 +71,24 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                     });
                 }
 
-                targetType.addEventListener('change', (e) => {
-                    console.log('[AlertsManager] target_type changed to:', e.target.value);
-                    targetsSelect.dataset.selectedTargets = '';
-                    this.loadTargets(e.target.value);
+                targetTypes.addEventListener('change', () => {
+                    this.updateTargetTypeBlocks();
                 });
 
-                targetsSelect.addEventListener('change', () => {
-                    const selectedTargetIds = Array.from(targetsSelect.selectedOptions || [])
+                targetSelects.forEach((select) => {
+                    const selectedTargetIds = Array.from(select.selectedOptions || [])
                         .map(option => String(option.value || '').trim())
                         .filter(value => value !== '');
-                    targetsSelect.dataset.selectedTargets = selectedTargetIds.join(',');
+                    if (selectedTargetIds.length > 0) {
+                        select.dataset.selectedTargets = selectedTargetIds.join(',');
+                    }
+
+                    select.addEventListener('change', () => {
+                        const currentSelectedTargetIds = Array.from(select.selectedOptions || [])
+                            .map(option => String(option.value || '').trim())
+                            .filter(value => value !== '');
+                        select.dataset.selectedTargets = currentSelectedTargetIds.join(',');
+                    });
                 });
 
                 const testSendButton = document.querySelector('.alertsmanager-test-send');
@@ -95,10 +102,7 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
 
                 // Always update trigger fields visibility on load
                 this.updateTriggerFields();
-
-                if (targetType.value) {
-                    this.loadTargets(targetType.value);
-                }
+                this.updateTargetTypeBlocks();
 
                 return true;
             };
@@ -152,9 +156,36 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
             if (startDateGroup) startDateGroup.style.display = 'block';
         },
 
+        updateTargetTypeBlocks: function() {
+            const targetTypes = document.getElementById('alert_target_types');
+            if (!targetTypes) {
+                return;
+            }
+
+            const selectedTypes = Array.from(targetTypes.selectedOptions || [])
+                .map(option => String(option.value || '').trim())
+                .filter(value => value !== '');
+
+            document.querySelectorAll('.alertsmanager-target-block').forEach((block) => {
+                const targetType = String(block.dataset.targetType || '').trim();
+                const targetSelect = block.querySelector('.alertsmanager-target-select');
+                const shouldShow = selectedTypes.includes(targetType);
+
+                block.classList.toggle('d-none', !shouldShow);
+                if (targetSelect) {
+                    targetSelect.disabled = !shouldShow;
+                    if (shouldShow) {
+                        if (!targetSelect.dataset.loaded) {
+                            this.loadTargets(targetType);
+                        }
+                    }
+                }
+            });
+        },
+
         loadTargets: async function(targetType) {
             console.log('[AlertsManager] loadTargets() called with type:', targetType);
-            const targetsSelect = document.getElementById('alert_targets');
+            const targetsSelect = document.querySelector('.alertsmanager-target-select[data-target-type="' + targetType + '"]');
             if (!targetsSelect) {
                 console.error('[AlertsManager] alert_targets element not found!');
                 return;
@@ -195,6 +226,7 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                     }
                     targetsSelect.appendChild(optionEl);
                 });
+                targetsSelect.dataset.loaded = '1';
             } catch (e) {
                 console.error('[AlertsManager] Failed to load targets:', e);
                 targetsSelect.innerHTML = '';
