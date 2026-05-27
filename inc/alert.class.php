@@ -46,7 +46,40 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 
     public static function getTypeName($nb = 0)
     {
-        return __s('Alertes mail', 'alertsmanager');
+        return __s('Alerts Manager', 'alertsmanager');
+    }
+
+    public static function getMenuName($nb = 0)
+    {
+        return self::getTypeName($nb);
+    }
+
+    public static function getMenuContent()
+    {
+        $title = self::getMenuName(Session::getPluralNumber());
+        $search = self::getSearchURL(false);
+        $form = self::getFormURL(false);
+
+        return [
+            'title'   => $title,
+            'icon'    => self::getIcon(),
+            'page'    => $search,
+            'links'   => [
+                'search' => $search,
+                'add'    => $form,
+            ],
+            'options' => [
+                'alertsmanager' => [
+                    'title' => $title,
+                    'icon'  => self::getIcon(),
+                    'page'  => $search,
+                    'links' => [
+                        'search' => $search,
+                        'add'    => $form,
+                    ],
+                ],
+            ],
+        ];
     }
 
     public static function getType()
@@ -290,7 +323,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
             return [
                 'success' => false,
                 'sent'    => 0,
-                'errors'  => ['Alert is not loaded'],
+                'errors'  => [__s('Alert is not loaded', 'alertsmanager')],
             ];
         }
 
@@ -302,7 +335,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         if (!isset($this->fields['id'])) {
             return [
                 'success' => false,
-                'errors'  => ['Alert is not loaded'],
+                'errors'  => [__s('Alert is not loaded', 'alertsmanager')],
                 'items'   => [],
             ];
         }
