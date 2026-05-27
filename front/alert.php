@@ -33,7 +33,7 @@ if (!Session::haveRight("plugin_alertsmanager_alert", READ)) {
 }
 
 Html::header(
-    __s('Alertes mail', 'alertsmanager'),
+    __s('Alerts Manager', 'alertsmanager'),
     $_SERVER['PHP_SELF'],
     'tools',
     'PluginAlertsmanagerAlert',

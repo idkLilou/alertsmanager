@@ -79,21 +79,21 @@
                 <option value="">-- {{ __('Select', 'alertsmanager') }} --</option>
                 {% set grouped = item.fields._available_fields_grouped ?? {} %}
                 {% if grouped.core is defined and grouped.core|length > 0 %}
-                    <optgroup label="{{ __('Champs core GLPI', 'alertsmanager') }}">
+                    <optgroup label="{{ __('GLPI core fields', 'alertsmanager') }}">
                         {% for field in grouped.core %}
                             <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
                         {% endfor %}
                     </optgroup>
                 {% endif %}
                 {% if grouped.glpi is defined and grouped.glpi|length > 0 %}
-                    <optgroup label="{{ __('Champs GLPI (tous)', 'alertsmanager') }}">
+                    <optgroup label="{{ __('All GLPI fields', 'alertsmanager') }}">
                         {% for field in grouped.glpi %}
                             <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
                         {% endfor %}
                     </optgroup>
                 {% endif %}
                 {% if grouped.plugin_fields is defined and grouped.plugin_fields|length > 0 %}
-                    <optgroup label="{{ __('Champs plugin Fields', 'alertsmanager') }}">
+                    <optgroup label="{{ __('Plugin Fields', 'alertsmanager') }}">
                         {% for field in grouped.plugin_fields %}
                             <option value="{{ field.id }}" {{ item.fields.observed_field == field.id ? 'selected' : '' }}>{{ field.label }}</option>
                         {% endfor %}

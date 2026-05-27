@@ -70,7 +70,7 @@ class PluginAlertsmanagerAlertMailer
                 'success'    => false,
                 'sent'       => 0,
                 'recipients' => [],
-                'errors'     => [sprintf('Alert %d not found', $alertId)],
+                'errors'     => [sprintf(__s('Alert %d not found', 'alertsmanager'), $alertId)],
             ];
         }
 
@@ -86,7 +86,7 @@ class PluginAlertsmanagerAlertMailer
                 'success'    => false,
                 'sent'       => 0,
                 'recipients' => [],
-                'errors'     => ['No valid recipient email found'],
+                'errors'     => [__s('No valid recipient email found', 'alertsmanager')],
             ];
         }
 
@@ -225,7 +225,7 @@ class PluginAlertsmanagerAlertMailer
             if (!$queued) {
                 return [
                     'success' => false,
-                    'error'   => 'Unable to queue mail',
+                    'error'   => __s('Unable to queue mail', 'alertsmanager'),
                 ];
             }
 
@@ -233,14 +233,14 @@ class PluginAlertsmanagerAlertMailer
             if ($queuedNotification === null) {
                 return [
                     'success' => false,
-                    'error'   => 'Mail queued but queued notification could not be found',
+                    'error'   => __s('Mail queued but queued notification could not be found', 'alertsmanager'),
                 ];
             }
 
             if (!$queuedNotification->sendById((int) $queuedNotification->getID())) {
                 return [
                     'success' => false,
-                    'error'   => 'Mail queued but sending failed',
+                    'error'   => __s('Mail queued but sending failed', 'alertsmanager'),
                 ];
             }
 
@@ -274,13 +274,13 @@ class PluginAlertsmanagerAlertMailer
         $descriptionParts = [];
         $entityName = trim((string) ($context['entity_name'] ?? ''));
         if ($entityName !== '') {
-            $descriptionParts[] = sprintf('Entite: %s', $entityName);
+            $descriptionParts[] = sprintf(__("Entity: %s", 'alertsmanager'), $entityName);
         }
         $itemUrl = trim((string) ($context['item_url'] ?? $context['trigger_item_url'] ?? ''));
         if ($itemUrl !== '') {
             $descriptionParts[] = $itemUrl;
         }
-        $descriptionParts[] = sprintf('Alerte envoyee a: %s', $recipientEmail);
+        $descriptionParts[] = sprintf(__("Alert sent to: %s", 'alertsmanager'), $recipientEmail);
 
         // create an all-day event: DTSTART/DTEND as dates (DTEND is non-inclusive, next day)
         $startDate = $eventDate->setTime(0, 0, 0);
@@ -465,7 +465,7 @@ class PluginAlertsmanagerAlertMailer
 
     private static function buildSubject(PluginAlertsmanagerAlert $alert, string $subject, array $context): string
     {
-        $prefix = sprintf('[Alerte %s]', trim((string) ($alert->fields['name'] ?? '')));
+        $prefix = sprintf('[%s %s]', __("Alert", 'alertsmanager'), trim((string) ($alert->fields['name'] ?? '')));
         $subject = trim($subject);
 
         if ($subject === '') {
@@ -485,9 +485,9 @@ class PluginAlertsmanagerAlertMailer
 
         $headerParts = [];
         if ($itemName !== '') {
-            $headerParts[] = sprintf('[Alerte sur : %s]', $itemName);
+            $headerParts[] = sprintf('[%s on: %s]', __("Alert", 'alertsmanager'), $itemName);
         } else {
-            $headerParts[] = sprintf('[Alerte %s]', $alertName);
+            $headerParts[] = sprintf('[%s %s]', __("Alert", 'alertsmanager'), $alertName);
         }
 
         if ($entityName !== '') {
@@ -500,7 +500,7 @@ class PluginAlertsmanagerAlertMailer
 
         $headerText = implode(' - ', $headerParts);
         $headerHtml = '<div style="margin:0 0 16px;padding:16px 18px;border:1px solid #dbe1ea;border-radius:14px;background:#f8fbff;">';
-        $headerHtml .= '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#637085;">Alerte</div>';
+        $headerHtml .= '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#637085;">' . __("Alert", 'alertsmanager') . '</div>';
         $headerHtml .= '<div style="margin-top:6px;font-size:20px;line-height:1.35;font-weight:700;color:#1f2937;">' . htmlescape($headerParts[0]) . '</div>';
 
         if ($entityName !== '' || $alertName !== '') {

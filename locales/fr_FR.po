@@ -1,0 +1,325 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2026
+# This file is distributed under the same license as the Alerts Manager plugin package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: GLPI Plugin - Alerts Manager\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-26 00:00+0000\n"
+"PO-Revision-Date: 2026-05-26 00:00+0000\n"
+"Last-Translator: Copilot\n"
+"Language-Team: French (France)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr_FR\n"
+"Plural-Forms: nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
+
+msgid "Alerts Manager"
+msgstr "Gestionnaire d’alertes"
+
+msgctxt "button"
+msgid "Save"
+msgstr "Enregistrer"
+
+msgid "Create"
+msgstr "Créer"
+
+msgid "Read"
+msgstr "Lecture"
+
+msgid "Update"
+msgstr "Mettre à jour"
+
+msgid "Delete"
+msgstr "Supprimer"
+
+msgid "Purge"
+msgstr "Purger"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Active"
+msgstr "Actif"
+
+msgid "Mail"
+msgstr "Courriel"
+
+msgid "Mail subject"
+msgstr "Objet du courriel"
+
+msgid "Mail content"
+msgstr "Contenu du courriel"
+
+msgid "Mail Subject"
+msgstr "Objet du courriel"
+
+msgid "Mail Content"
+msgstr "Contenu du courriel"
+
+msgid "Preview"
+msgstr "Prévisualisation"
+
+msgid "Test send mail"
+msgstr "Tester l'envoi du courriel"
+
+msgid "Triggers"
+msgstr "Déclencheurs"
+
+msgid "Observed field"
+msgstr "Champ observé"
+
+msgid "Select"
+msgstr "Sélectionner"
+
+msgid "-- Select --"
+msgstr "-- Sélectionner --"
+
+msgid "Months before"
+msgstr "Mois avant"
+
+msgid "Days before"
+msgstr "Jours avant"
+
+msgid "Frequency"
+msgstr "Fréquence"
+
+msgid "Daily"
+msgstr "Quotidien"
+
+msgid "Weekly"
+msgstr "Hebdomadaire"
+
+msgid "Monthly"
+msgstr "Mensuel"
+
+msgid "Start date"
+msgstr "Date de début"
+
+msgid "Targets"
+msgstr "Cibles"
+
+msgid "Target type"
+msgstr "Type de cible"
+
+msgid "GLPI core fields"
+msgstr "Champs GLPI principaux"
+
+msgid "All GLPI fields"
+msgstr "Champs GLPI (tous)"
+
+msgid "Plugin Fields"
+msgstr "Champs Plugin Fields"
+
+msgid "User"
+msgstr "Utilisateur"
+
+msgid "Group"
+msgstr "Groupe"
+
+msgid "Profile"
+msgstr "Profil"
+
+msgid "Date field"
+msgstr "Champ de date"
+
+msgid "Every Monday"
+msgstr "Tous les lundis"
+
+msgid "Every Tuesday"
+msgstr "Tous les mardis"
+
+msgid "Every Wednesday"
+msgstr "Tous les mercredis"
+
+msgid "Every Thursday"
+msgstr "Tous les jeudis"
+
+msgid "Every Friday"
+msgstr "Tous les vendredis"
+
+msgid "Every Saturday"
+msgstr "Tous les samedis"
+
+msgid "Every Sunday"
+msgstr "Tous les dimanches"
+
+msgid "Characteristics"
+msgstr "Caractéristiques"
+
+msgid "Alert"
+msgstr "Alerte"
+
+msgid "Trigger type"
+msgstr "Type de déclencheur"
+
+msgid "Evaluate alerts and send notifications"
+msgstr "Évaluer les alertes et envoyer les notifications"
+
+msgid "Alert %d not found"
+msgstr "Alerte %d introuvable"
+
+msgid "No valid recipient email found"
+msgstr "Aucune adresse e-mail de destinataire valide trouvée"
+
+msgid "Unable to queue mail"
+msgstr "Impossible de mettre le courriel en file d'attente"
+
+msgid "Mail queued but queued notification could not be found"
+msgstr "Courriel mis en file d'attente, mais la notification en attente est introuvable"
+
+msgid "Mail queued but sending failed"
+msgstr "Courriel mis en file d'attente, mais l'envoi a échoué"
+
+msgid "Alert is not loaded"
+msgstr "L'alerte n'est pas chargée"
+
+msgid "Access denied"
+msgstr "Accès refusé"
+
+msgid "Missing alert_id"
+msgstr "Identifiant alert_id manquant"
+
+msgid "Alert not found"
+msgstr "Alerte introuvable"
+
+msgid "No trigger configured for this alert"
+msgstr "Aucun déclencheur n'est configuré pour cette alerte"
+
+msgid "Unsupported trigger type"
+msgstr "Type de déclencheur non pris en charge"
+
+msgid "Invalid observed field configuration"
+msgstr "Configuration du champ observé invalide"
+
+msgid "Unsafe observed field configuration"
+msgstr "Configuration du champ observé non sécurisée"
+
+msgid "Plugin Fields classes are not available"
+msgstr "Les classes Plugin Fields ne sont pas disponibles"
+
+msgid "Invalid plugin fields configuration"
+msgstr "Configuration Plugin Fields invalide"
+
+msgid "Plugin Fields container %d not found"
+msgstr "Conteneur Plugin Fields %d introuvable"
+
+msgid "No itemtypes available for this plugin field"
+msgstr "Aucun type d'élément disponible pour ce champ Plugin Fields"
+
+msgid "Alert user target"
+msgid_plural "Alert user targets"
+msgstr[0] "Cible utilisateur d'alerte"
+msgstr[1] "Cibles utilisateur d'alerte"
+msgstr[2] "Cibles utilisateur d'alerte"
+
+msgid "Alert group target"
+msgid_plural "Alert group targets"
+msgstr[0] "Cible groupe d'alerte"
+msgstr[1] "Cibles groupe d'alerte"
+msgstr[2] "Cibles groupe d'alerte"
+
+msgid "Alert profile target"
+msgid_plural "Alert profile targets"
+msgstr[0] "Cible profil d'alerte"
+msgstr[1] "Cibles profil d'alerte"
+msgstr[2] "Cibles profil d'alerte"
+
+msgid "Alert user"
+msgid_plural "Alert users"
+msgstr[0] "Utilisateur d'alerte"
+msgstr[1] "Utilisateurs d'alerte"
+msgstr[2] "Utilisateurs d'alerte"
+
+msgid "%s updates an item"
+msgstr "%s met à jour un élément"
+
+msgid "%1$s adds the item %2$s"
+msgstr "%1$s a ajouté l'élément %2$s"
+
+msgid "%s deletes an item"
+msgstr "%s a supprimé un élément"
+
+msgid "%s restores an item"
+msgstr "%s a restauré un élément"
+
+msgid "%s purges an item"
+msgstr "%s a purgé un élément"
+
+msgid "Alerte %d introuvable"
+msgstr "Alerte %d introuvable"
+
+msgid "Aucune adresse e-mail de destinataire valide trouvée"
+msgstr "Aucune adresse e-mail de destinataire valide trouvée"
+
+msgid "Impossible de mettre le courriel en file d'attente"
+msgstr "Impossible de mettre le courriel en file d'attente"
+
+msgid "Courriel mis en file d'attente, mais la notification en attente est introuvable"
+msgstr "Courriel mis en file d'attente, mais la notification en attente est introuvable"
+
+msgid "Courriel mis en file d'attente, mais l'envoi a échoué"
+msgstr "Courriel mis en file d'attente, mais l'envoi a échoué"
+
+msgid "L'alerte n'est pas chargée"
+msgstr "L'alerte n'est pas chargée"
+
+msgid "Accès refusé"
+msgstr "Accès refusé"
+
+msgid "Identifiant alert_id manquant"
+msgstr "Identifiant alert_id manquant"
+
+msgid "Alerte introuvable"
+msgstr "Alerte introuvable"
+
+msgid "Aucun déclencheur n'est configuré pour cette alerte"
+msgstr "Aucun déclencheur n'est configuré pour cette alerte"
+
+msgid "Type de déclencheur non pris en charge"
+msgstr "Type de déclencheur non pris en charge"
+
+msgid "Configuration du champ observé invalide"
+msgstr "Configuration du champ observé invalide"
+
+msgid "Configuration du champ observé non sécurisée"
+msgstr "Configuration du champ observé non sécurisée"
+
+msgid "Les classes Plugin Fields ne sont pas disponibles"
+msgstr "Les classes Plugin Fields ne sont pas disponibles"
+
+msgid "Configuration Plugin Fields invalide"
+msgstr "Configuration Plugin Fields invalide"
+
+msgid "Conteneur Plugin Fields %d introuvable"
+msgstr "Conteneur Plugin Fields %d introuvable"
+
+msgid "Aucun type d'élément disponible pour ce champ Plugin Fields"
+msgstr "Aucun type d'élément disponible pour ce champ Plugin Fields"
+
+msgid "Champs core GLPI"
+msgstr "Champs GLPI principaux"
+
+msgid "Champs GLPI (tous)"
+msgstr "Champs GLPI (tous)"
+
+msgid "Champs plugin Fields"
+msgstr "Champs du plugin Fields"
+
+msgid "Gestionnaire d'alertes"
+msgstr "Gestionnaire d'alertes"
+
+msgid "Entity: %s"
+msgstr "Entité : %s"
+
+msgid "Alert sent to: %s"
+msgstr "Alerte envoyée à : %s"
+
+msgid "Mail alerts"
+msgstr "Alertes mail"
+

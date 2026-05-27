@@ -14,7 +14,7 @@ try {
         http_response_code(403);
         echo json_encode([
             'success' => false,
-            'error'   => 'Access denied',
+            'error'   => __s('Access denied', 'alertsmanager'),
         ]);
         exit;
     }
@@ -28,7 +28,7 @@ try {
         http_response_code(400);
         echo json_encode([
             'success' => false,
-            'error'   => 'Missing alert_id',
+            'error'   => __s('Missing alert_id', 'alertsmanager'),
         ]);
         exit;
     }
@@ -38,7 +38,7 @@ try {
         http_response_code(404);
         echo json_encode([
             'success' => false,
-            'error'   => 'Alert not found',
+            'error'   => __s('Alert not found', 'alertsmanager'),
         ]);
         exit;
     }

@@ -47,7 +47,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => [sprintf('Alert %d not found', $alertId)],
+                'errors'  => [sprintf(__s('Alert %d not found', 'alertsmanager'), $alertId)],
                 'items'   => [],
             ];
         }
@@ -58,7 +58,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => ['No trigger configured for this alert'],
+                'errors'  => [__s('No trigger configured for this alert', 'alertsmanager')],
                 'items'   => [],
             ];
         }
@@ -84,7 +84,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
         return [
             'success' => false,
-            'errors'  => ['Unsupported trigger type'],
+            'errors'  => [__s('Unsupported trigger type', 'alertsmanager')],
             'items'   => [],
         ];
     }
@@ -159,7 +159,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => ['Invalid observed field configuration'],
+                'errors'  => [__s('Invalid observed field configuration', 'alertsmanager')],
                 'items'   => [],
             ];
         }
@@ -169,7 +169,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => ['Unsafe observed field configuration'],
+                'errors'  => [__s('Unsafe observed field configuration', 'alertsmanager')],
                 'items'   => [],
             ];
         }
@@ -251,7 +251,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => ['Plugin Fields classes are not available'],
+                'errors'  => [__s('Plugin Fields classes are not available', 'alertsmanager')],
                 'items'   => [],
             ];
         }
@@ -261,7 +261,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => ['Invalid plugin fields configuration'],
+                'errors'  => [__s('Invalid plugin fields configuration', 'alertsmanager')],
                 'items'   => [],
             ];
         }
@@ -274,7 +274,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => ['Invalid plugin fields configuration'],
+                'errors'  => [__s('Invalid plugin fields configuration', 'alertsmanager')],
                 'items'   => [],
             ];
         }
@@ -285,7 +285,7 @@ class PluginAlertsmanagerAlertTriggerEngine
 
             return [
                 'success' => false,
-                'errors'  => [sprintf('Plugin Fields container %d not found', $containerId)],
+                'errors'  => [sprintf(__s('Plugin Fields container %d not found', 'alertsmanager'), $containerId)],
                 'items'   => [],
             ];
         }
@@ -297,7 +297,7 @@ class PluginAlertsmanagerAlertTriggerEngine
         if ($decodedItemtypes === []) {
             return [
                 'success' => false,
-                'errors'  => ['No itemtypes available for this plugin field'],
+                'errors'  => [__s('No itemtypes available for this plugin field', 'alertsmanager')],
                 'items'   => [],
             ];
         }
