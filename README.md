@@ -39,6 +39,7 @@ Alerts Manager permet de :
   - utilisateurs
   - groupes
   - profils
+- sélectionner plusieurs cibles dans une même alerte sans doublonner les destinataires
 - définir des déclencheurs :
   - selon un champ de date observé
   - selon une fréquence planifiée (daily / weekly / monthly côté formulaire).
@@ -77,7 +78,7 @@ Le plugin expose une interface GLPI dédiée dans le menu **Outils**.
 
 ## État actuel
 
-Version plugin : **1.2.0** (*release*)
+Version plugin : **1.3.0** (*release*)
 
 Compatibilité déclarée :
 - GLPI min : `11.0.0`
