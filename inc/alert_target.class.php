@@ -132,7 +132,8 @@ class PluginAlertsmanagerAlertTarget
             return [];
         }
 
-        $emails = [];
+        // Ensure one email per user from glpi_useremails only.
+        $emailCandidatesByUserId = [];
 
         $extraEmailRows = $DB->request([
             'SELECT' => ['users_id', 'email'],
@@ -141,16 +142,45 @@ class PluginAlertsmanagerAlertTarget
                 'users_id' => $userIds,
                 'email'    => ['<>', ''],
             ],
+            'ORDER'  => ['users_id', 'id'],
         ]);
 
         foreach ($extraEmailRows as $row) {
+            $userId = (int) ($row['users_id'] ?? 0);
             $email = trim((string) ($row['email'] ?? ''));
-            if ($email !== '') {
-                $emails[strtolower($email)] = $email;
+
+            if ($userId <= 0 || $email === '') {
+                continue;
+            }
+
+            if (!isset($emailCandidatesByUserId[$userId])) {
+                $emailCandidatesByUserId[$userId] = [];
+            }
+
+            $emailCandidatesByUserId[$userId][] = $email;
+        }
+
+        $emailsByUserId = [];
+        foreach ($emailCandidatesByUserId as $userId => $candidates) {
+            foreach (array_unique($candidates) as $candidate) {
+                if (self::isPotentiallyValidEmail($candidate)) {
+                    $emailsByUserId[(int) $userId] = $candidate;
+                    break;
+                }
             }
         }
 
+        $emails = [];
+        foreach ($emailsByUserId as $email) {
+            $emails[strtolower($email)] = $email;
+        }
+
         return array_values($emails);
+    }
+
+    private static function isPotentiallyValidEmail(string $email): bool
+    {
+        return $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 
     public static function getDirectUserIds($alertId)
