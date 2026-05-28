@@ -104,6 +104,21 @@ msgstr "Date de début"
 msgid "Targets"
 msgstr "Cibles"
 
+msgid "Target types"
+msgstr "Types de cibles"
+
+msgid "Select one or more target types, then choose the entities for each type."
+msgstr "Sélectionnez un ou plusieurs types de cibles, puis choisissez les entités pour chaque type."
+
+msgid "Users"
+msgstr "Utilisateurs"
+
+msgid "Groups"
+msgstr "Groupes"
+
+msgid "Profiles"
+msgstr "Profils"
+
 msgid "Target type"
 msgstr "Type de cible"
 
