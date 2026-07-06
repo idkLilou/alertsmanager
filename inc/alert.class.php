@@ -43,6 +43,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 {
     public static $rightname = 'plugin_alertsmanager_alert';
     public $dohistory        = true;
+    public $maybe_deleted    = true;
 
     public static function getTypeName($nb = 0)
     {
@@ -104,7 +105,14 @@ class PluginAlertsmanagerAlert extends CommonDBTM
 
     public static function canDelete(): bool
     {
-        return Session::haveRight(self::$rightname, DELETE) || Session::haveRight('config', UPDATE);
+        return Session::haveRight(self::$rightname, DELETE)
+            || Session::haveRight(self::$rightname, UPDATE)
+            || Session::haveRight('config', UPDATE);
+    }
+
+    public static function canPurge(): bool
+    {
+        return Session::haveRight(self::$rightname, PURGE) || Session::haveRight('config', UPDATE);
     }
 
     public static function canUpdate(): bool
