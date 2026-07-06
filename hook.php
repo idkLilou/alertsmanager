@@ -56,7 +56,8 @@ function plugin_alertsmanager_install()
          `mail_content`             LONGTEXT,
          `entities_id`              INT {$default_key_sign} NOT NULL DEFAULT 0,
          `is_recursive`             TINYINT NOT NULL DEFAULT 0,
-         `date_creation`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+            `is_deleted`               TINYINT NOT NULL DEFAULT 0,
+            `date_creation`            TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
          `date_modification`        TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
          PRIMARY KEY (`id`)
          ) ENGINE = INNODB DEFAULT CHARSET = {$default_charset} COLLATE = {$default_collation}
@@ -140,6 +141,18 @@ function plugin_alertsmanager_install()
             try {
                 // Try to add column without IF NOT EXISTS; if it fails, swallow the error
                 $DB->doQuery("ALTER TABLE `$alert_triggers_table` ADD COLUMN `start_date` DATE DEFAULT NULL");
+            } catch (\Throwable $__e) {
+                // best-effort: leave existing schema as-is
+            }
+        }
+    }
+
+    if ($DB->tableExists($alert_table)) {
+        try {
+            $DB->doQuery("ALTER TABLE `$alert_table` ADD COLUMN IF NOT EXISTS `is_deleted` TINYINT NOT NULL DEFAULT 0");
+        } catch (\Throwable $e) {
+            try {
+                $DB->doQuery("ALTER TABLE `$alert_table` ADD COLUMN `is_deleted` TINYINT NOT NULL DEFAULT 0");
             } catch (\Throwable $__e) {
                 // best-effort: leave existing schema as-is
             }
