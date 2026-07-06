@@ -112,6 +112,9 @@
         </div>
     </div>
 
+    {# Frequency and start date commented out per request #}
+
+    {#
     {{ fields.dropdownArrayField(
         'frequency',
         item.fields.frequency,
@@ -131,6 +134,7 @@
             <input type="date" id="trigger_start_date" name="trigger_start_date" class="form-control" value="{{ item.fields.trigger_start_date ?? '' }}" />
         </div>
     </div>
+    #}
 
     <div class="hr-text mt-3">
         <i class="ti ti-target"></i>
