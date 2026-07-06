@@ -58,12 +58,14 @@
                 // Show date-based trigger fields
                 if (dateGroup) dateGroup.style.display = 'block';
                 if (daysGroup) daysGroup.style.display = 'block';
-                if (frequencyGroup) frequencyGroup.style.display = 'none';
+                // frequency removed from form; do not touch frequencyGroup
+                // if (frequencyGroup) frequencyGroup.style.display = 'none';
             } else {
                 // Show frequency-based trigger fields
                 if (dateGroup) dateGroup.style.display = 'none';
                 if (daysGroup) daysGroup.style.display = 'none';
-                if (frequencyGroup) frequencyGroup.style.display = 'block';
+                // frequency removed from form; do not touch frequencyGroup
+                // if (frequencyGroup) frequencyGroup.style.display = 'block';
             }
         },
 

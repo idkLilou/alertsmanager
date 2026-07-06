@@ -62,6 +62,8 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                     this.updateTriggerFields();
                 });
 
+                // Frequency field removed from form; listener disabled
+                /*
                 // Also react to frequency changes to show/hide start date when needed
                 const frequencySelect = document.getElementById('frequency');
                 if (frequencySelect) {
@@ -70,6 +72,7 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                         this.updateTriggerFields();
                     });
                 }
+                */
 
                 targetTypes.addEventListener('change', () => {
                     this.updateTargetTypeBlocks();
@@ -153,7 +156,8 @@ console.log('[AlertsManager] alertsmanager.js loaded!');
                 if (frequencyGroup) frequencyGroup.style.display = 'block';
             }
 
-            if (startDateGroup) startDateGroup.style.display = 'block';
+            // start date removed from form; do not force display
+            // if (startDateGroup) startDateGroup.style.display = 'block';
         },
 
         updateTargetTypeBlocks: function() {
