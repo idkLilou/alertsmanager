@@ -17,5 +17,6 @@
         "psr-4": {
             "Glpi\\Tools\\": "../../tools/src/"
         }
-    }
+    },
+    "license": "GPL-2.0-or-later"
 }
