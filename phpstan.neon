@@ -1,0 +1,31 @@
+includes:
+    - ../../vendor/glpi-project/phpstan-glpi/extension.neon
+
+parameters:
+    level: 6
+
+    parallel:
+        maximumNumberOfProcesses: 2
+
+    paths:
+        - ajax
+        - front
+        - inc
+        - hook.php
+        - setup.php
+
+    bootstrapFiles:
+        - ../../vendor/autoload.php
+        - ../../stubs/glpi_constants.php
+        - setup.php
+
+    scanDirectories:
+        - ../../inc
+        - ../../src
+
+    treatPhpDocTypesAsCertain: false
+
+    dynamicConstantNames:
+        - PLUGIN_ALERTSMANAGER_VERSION
+        - PLUGIN_ALERTSMANAGER_MIN_GLPI
+        - PLUGIN_ALERTSMANAGER_MAX_GLPI

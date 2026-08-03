@@ -1,0 +1,148 @@
+name: CI # Nom du workflow affiché dans GitHub Actions
+
+# Déclencheurs du workflow
+on:
+  # Exécution à chaque push sur la branche principale
+  push:
+    branches:
+      - main
+
+  # Exécution à chaque création ou mise à jour d'une Pull Request
+  pull_request:
+
+  # Permet de lancer le workflow manuellement depuis GitHub
+  workflow_dispatch:
+
+# Permissions minimales nécessaires
+permissions:
+  contents: read # Lecture seule du dépôt
+
+# Empêche plusieurs exécutions du même workflow sur la même branche
+# Si un nouveau commit est poussé, l'ancien workflow est annulé
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  php-quality:
+    name: PHP Quality
+    runs-on: ubuntu-latest # Machine Ubuntu utilisée par GitHub
+    timeout-minutes: 15     # Arrête le workflow après 15 minutes
+
+    steps:
+
+      # Récupère le contenu du dépôt
+      - name: Checkout plugin
+        uses: actions/checkout@v7
+
+      # Installation de PHP et des extensions nécessaires
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2" # Version de PHP utilisée
+          coverage: none     # Désactive Xdebug (plus rapide)
+          tools: composer:v2 # Installe Composer v2
+
+          # Extensions PHP nécessaires au plugin
+          extensions: >-
+            bcmath,
+            curl,
+            dom,
+            fileinfo,
+            gd,
+            intl,
+            mbstring,
+            mysqli,
+            simplexml,
+            xml,
+            zip
+
+      # Vérifie que le fichier composer.json est valide
+      - name: Validate Composer configuration
+        run: composer validate --strict --no-check-publish
+
+      # Installe les dépendances du plugin
+      - name: Install plugin dependencies
+        run: >
+          composer install
+          --no-interaction
+          --prefer-dist
+          --no-progress
+
+      # Vérifie que tous les fichiers PHP sont syntaxiquement valides
+      # (équivalent à lancer php -l sur chaque fichier)
+      - name: Check PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          find . \
+            -type f \
+            -name "*.php" \
+            -not -path './vendor/*' \
+            -not -path './dist/*' \
+            -not -path './glpi/*' \
+            -print0 \
+            | xargs \
+              -0 \
+              -r \
+              -n 1 \
+              -P "$(nproc)" \
+              php -l
+
+      # Vérifie le respect des règles de codage définies
+      # dans le fichier .php-cs-fixer.dist.php
+      - name: Check PHP coding standards
+        run: >
+          vendor/bin/php-cs-fixer check
+          --diff
+          --verbose
+          --show-progress=dots
+
+      # Télécharge le code source de GLPI
+      # Cela permet de lancer PHPStan dans un vrai environnement GLPI
+      - name: Checkout GLPI 11
+        uses: actions/checkout@v7
+        with:
+          repository: glpi-project/glpi
+          ref: 11.0/bugfixes
+          path: glpi
+          fetch-depth: 1
+
+      # Installe les dépendances de GLPI
+      - name: Install GLPI dependencies
+        working-directory: glpi
+        run: >
+          composer install
+          --no-interaction
+          --prefer-dist
+          --no-progress
+          --no-scripts
+
+      # Copie le plugin dans le dossier plugins de GLPI
+      # afin que PHPStan puisse résoudre les dépendances GLPI
+      - name: Copy plugin into GLPI
+        shell: bash
+        run: |
+          mkdir -p glpi/plugins/alertsmanager
+
+          rsync \
+            --archive \
+            --delete \
+            --exclude='.git/' \
+            --exclude='dist/' \
+            --exclude='glpi/' \
+            --exclude='vendor/' \
+            ./ \
+            glpi/plugins/alertsmanager/
+
+      # Lance PHPStan pour détecter les erreurs potentielles
+      # sans exécuter le code
+      - name: Run PHPStan
+        working-directory: glpi/plugins/alertsmanager
+        run: >
+          php ../../vendor/bin/phpstan analyse
+          --configuration=phpstan.neon
+          --memory-limit=1G
+          --no-interaction
+          --no-progress
