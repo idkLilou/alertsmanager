@@ -118,7 +118,8 @@ class PluginAlertsmanagerAlertTriggerEngine
         ]);
 
         foreach ($rows as $row) {
-            error_log(sprintf('[alertsmanager] loadTrigger alertId=%d trigger_type=%s observed_field=%s observed_itemtype=%s start_date=%s days_before=%s months_before=%s frequency=%s',
+            error_log(sprintf(
+                '[alertsmanager] loadTrigger alertId=%d trigger_type=%s observed_field=%s observed_itemtype=%s start_date=%s days_before=%s months_before=%s frequency=%s',
                 $alertId,
                 (string) ($row['trigger_type'] ?? ''),
                 (string) ($row['observed_field'] ?? ''),
@@ -126,7 +127,7 @@ class PluginAlertsmanagerAlertTriggerEngine
                 (string) ($row['start_date'] ?? ''),
                 (string) ($row['trigger_days_before'] ?? ''),
                 (string) ($row['trigger_months_before'] ?? ''),
-                (string) ($row['frequency'] ?? '')
+                (string) ($row['frequency'] ?? ''),
             ));
 
             return [
@@ -206,7 +207,7 @@ class PluginAlertsmanagerAlertTriggerEngine
             $dueDate = self::computeDueDate(
                 $sourceDate,
                 (int) ($trigger['trigger_months_before'] ?? 0),
-                (int) ($trigger['trigger_days_before'] ?? 0)
+                (int) ($trigger['trigger_days_before'] ?? 0),
             );
 
             if ((int) ($alert->getID()) > 0) {
@@ -244,7 +245,7 @@ class PluginAlertsmanagerAlertTriggerEngine
         PluginAlertsmanagerAlert $alert,
         array $trigger,
         DateTimeImmutable $now,
-        string $observedField
+        string $observedField,
     ): array {
         if (!class_exists('PluginFieldsContainer') || !class_exists('PluginFieldsToolbox')) {
             error_log(sprintf('[alertsmanager] evaluatePluginFieldsTrigger alert=%d Plugin Fields classes unavailable', (int) $alert->getID()));
@@ -351,7 +352,7 @@ class PluginAlertsmanagerAlertTriggerEngine
                 $dueDate = self::computeDueDate(
                     $sourceDate,
                     (int) ($trigger['trigger_months_before'] ?? 0),
-                    (int) ($trigger['trigger_days_before'] ?? 0)
+                    (int) ($trigger['trigger_days_before'] ?? 0),
                 );
 
                 if ($dueDate->format('Y-m-d') !== $now->format('Y-m-d')) {
@@ -394,7 +395,7 @@ class PluginAlertsmanagerAlertTriggerEngine
         string $pluginFieldName,
         int $containerId,
         string $containerName,
-        string $observedField
+        string $observedField,
     ): string {
         if ($itemId <= 0 || $itemtype === '' || $containerName === '') {
             return '';
@@ -670,7 +671,7 @@ class PluginAlertsmanagerAlertTriggerEngine
             'glpi_problems'        => Problem::class,
             'glpi_changes'         => Change::class,
             'glpi_contracts'       => Contract::class,
-            'glpi_softwarelicenses'=> SoftwareLicense::class,
+            'glpi_softwarelicenses' => SoftwareLicense::class,
             'glpi_computers'       => Computer::class,
             'glpi_printers'        => Printer::class,
             'glpi_monitors'        => Monitor::class,
@@ -686,7 +687,7 @@ class PluginAlertsmanagerAlertTriggerEngine
             'glpi_suppliers'       => Supplier::class,
             'glpi_manufacturers'   => Manufacturer::class,
             'glpi_devicememories'  => DeviceMemory::class,
-            'glpi_deviceprocessors'=> DeviceProcessor::class,
+            'glpi_deviceprocessors' => DeviceProcessor::class,
             'glpi_devicefirmwares' => DeviceFirmware::class,
             default                => null,
         };

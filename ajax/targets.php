@@ -8,7 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 try {
     error_log('[alertsmanager][targets] Request received. Type: ' . $_GET['target_type'] ?? 'NONE');
-    
+
     if (!Session::haveRight('plugin_alertsmanager_alert', READ) && !Session::haveRight('config', READ)) {
         error_log('[alertsmanager][targets] Access denied');
         http_response_code(403);
@@ -93,4 +93,3 @@ try {
     echo json_encode(['error' => 'targets_failed']);
     exit;
 }
-

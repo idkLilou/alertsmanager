@@ -38,9 +38,9 @@ if (!defined('GLPI_ROOT')) {
  */
 class PluginAlertsmanagerAlertTarget
 {
-    const TARGET_USER = 'User';
-    const TARGET_GROUP = 'Group';
-    const TARGET_PROFILE = 'Profile';
+    public const TARGET_USER = 'User';
+    public const TARGET_GROUP = 'Group';
+    public const TARGET_PROFILE = 'Profile';
 
     public static function getTargetTypes()
     {
@@ -79,7 +79,7 @@ class PluginAlertsmanagerAlertTarget
             if ($class) {
                 $items = new $class();
                 $targetItems = $items->find([
-                    'plugin_alertsmanager_alerts_id' => $alertId
+                    'plugin_alertsmanager_alerts_id' => $alertId,
                 ]);
                 $targets[$type] = $targetItems;
             }

@@ -1,4 +1,9 @@
 {
+    "name": "idklilou/alertsmanager",
+    "description": "GLPI plugin to manage alerts",
+    "type": "glpi-plugin",
+    "license": "GPL-2.0-or-later",
+
     "require": {
         "php": ">=8.2"
     },
@@ -17,6 +22,5 @@
         "psr-4": {
             "Glpi\\Tools\\": "../../tools/src/"
         }
-    },
-    "license": "GPL-2.0-or-later"
+    }
 }

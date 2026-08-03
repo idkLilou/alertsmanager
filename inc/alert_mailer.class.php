@@ -52,7 +52,7 @@ class PluginAlertsmanagerOutlookMailer extends GLPIMailer
         ) {
             $this->getEmail()->attachFromPath(
                 (string) $this->calendarInvite['path'],
-                (string) ($this->calendarInvite['name'] ?? basename((string) $this->calendarInvite['path']))
+                (string) ($this->calendarInvite['name'] ?? basename((string) $this->calendarInvite['path'])),
             );
         }
 
@@ -115,7 +115,7 @@ class PluginAlertsmanagerAlertMailer
                 $subject,
                 $bodyText,
                 $bodyHtml,
-                $context
+                $context,
             );
 
             if ($result['success']) {
@@ -197,7 +197,7 @@ class PluginAlertsmanagerAlertMailer
         string $subject,
         string $bodyText,
         string $bodyHtml,
-        array $context
+        array $context,
     ): array {
         $calendarInvite = self::buildCalendarInvite($alert, $sender, $recipientEmail, $subject, $context);
 

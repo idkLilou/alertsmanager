@@ -40,7 +40,8 @@ if (!isset($_GET['id'])) {
 
 $alert = new PluginAlertsmanagerAlert();
 
-function alertsmanager_save_trigger(int $alertId, array $input = []): void {
+function alertsmanager_save_trigger(int $alertId, array $input = []): void
+{
     /** @var DBmysql $DB */
     global $DB;
 
@@ -80,7 +81,8 @@ function alertsmanager_save_trigger(int $alertId, array $input = []): void {
 /**
  * Save target relations (users/groups/profiles)
  */
-function alertsmanager_normalize_target_ids($values): array {
+function alertsmanager_normalize_target_ids($values): array
+{
     if (!is_array($values)) {
         $values = [$values];
     }
@@ -93,7 +95,8 @@ function alertsmanager_normalize_target_ids($values): array {
     return array_values(array_unique($values));
 }
 
-function alertsmanager_get_targets_by_type(array $input = []): array {
+function alertsmanager_get_targets_by_type(array $input = []): array
+{
     $targetsByType = [
         'User'    => [],
         'Group'   => [],
@@ -115,7 +118,8 @@ function alertsmanager_get_targets_by_type(array $input = []): array {
     return $targetsByType;
 }
 
-function alertsmanager_save_targets(int $alertId, array $input = []) {
+function alertsmanager_save_targets(int $alertId, array $input = [])
+{
     /** @var DBmysql $DB */
     global $DB;
 
@@ -199,7 +203,7 @@ if (isset($_POST['update'])) {
         );
 
         // Save targets relations
-    alertsmanager_save_trigger((int) $newID, $_POST);
+        alertsmanager_save_trigger((int) $newID, $_POST);
         alertsmanager_save_targets((int) $newID, $_POST);
 
         if ($_SESSION['glpibackcreated']) {

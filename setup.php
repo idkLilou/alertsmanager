@@ -67,7 +67,7 @@ function plugin_init_alertsmanager()
                 'hourmin'       => 0,
                 'hourmax'       => 24,
                 'logs_lifetime' => 30,
-            ]
+            ],
         );
 
         if (Session::haveRight('plugin_alertsmanager_alert', READ) || Session::haveRight('config', UPDATE)) {

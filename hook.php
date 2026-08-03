@@ -136,12 +136,12 @@ function plugin_alertsmanager_install()
         // Add column if it does not exist (MySQL 8+ supports IF NOT EXISTS)
         try {
             $DB->doQuery("ALTER TABLE `$alert_triggers_table` ADD COLUMN IF NOT EXISTS `start_date` DATE DEFAULT NULL");
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // If ALTER with IF NOT EXISTS is not supported by MySQL version, ignore and try a safe check
             try {
                 // Try to add column without IF NOT EXISTS; if it fails, swallow the error
                 $DB->doQuery("ALTER TABLE `$alert_triggers_table` ADD COLUMN `start_date` DATE DEFAULT NULL");
-            } catch (\Throwable $__e) {
+            } catch (Throwable $__e) {
                 // best-effort: leave existing schema as-is
             }
         }
@@ -150,10 +150,10 @@ function plugin_alertsmanager_install()
     if ($DB->tableExists($alert_table)) {
         try {
             $DB->doQuery("ALTER TABLE `$alert_table` ADD COLUMN IF NOT EXISTS `is_deleted` TINYINT NOT NULL DEFAULT 0");
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             try {
                 $DB->doQuery("ALTER TABLE `$alert_table` ADD COLUMN `is_deleted` TINYINT NOT NULL DEFAULT 0");
-            } catch (\Throwable $__e) {
+            } catch (Throwable $__e) {
                 // best-effort: leave existing schema as-is
             }
         }
@@ -168,8 +168,8 @@ function plugin_alertsmanager_install()
             'state'        => CronTask::STATE_WAITING,
             'hourmin'      => 0,
             'hourmax'      => 24,
-            'logs_lifetime'=> 30,
-        ]
+            'logs_lifetime' => 30,
+        ],
     );
 
     $migration->displayMessage("Installation completed successfully");

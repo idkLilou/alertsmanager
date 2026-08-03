@@ -152,7 +152,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
             self::logCronDiagnostic($task, sprintf(
                 '[alertsmanager] Evaluating alert #%d "%s"',
                 (int) $alert->getID(),
-                (string) ($alert->fields['name'] ?? '')
+                (string) ($alert->fields['name'] ?? ''),
             ));
 
             try {
@@ -195,7 +195,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                     (string) ($item['field'] ?? ''),
                     (string) ($item['field_value'] ?? ''),
                     (string) ($item['due_date'] ?? ''),
-                    (string) ($item['entity_name'] ?? '')
+                    (string) ($item['entity_name'] ?? ''),
                 ));
 
                 try {
@@ -354,7 +354,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
     public function showForm($ID, $options = [])
     {
         error_log('[AlertsManager] showForm() called with ID=' . $ID);
-        
+
         if ($ID > 0) {
             $this->getFromDB($ID);
         } else {
@@ -667,7 +667,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                 $fields[$fieldId] = [
                     'id'    => $fieldId,
                     'label' => $fieldLabel,
-                    'source'=> 'core',
+                    'source' => 'core',
                 ];
             }
 
@@ -679,7 +679,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
             if (method_exists($result, 'free')) {
                 $result->free();
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             error_log('[AlertsManager] Error querying information_schema for date fields: ' . $e->getMessage());
         }
 
@@ -801,7 +801,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return sprintf(
             '%s - %s',
             self::getTableLabel($tableName),
-            self::humanizeFieldName($fieldName)
+            self::humanizeFieldName($fieldName),
         );
     }
 
@@ -818,7 +818,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                 if ($itemtype !== '') {
                     return self::getItemtypeLabel($itemtype);
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Fallback below.
             }
         }
@@ -841,7 +841,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                     return $tableName;
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Fall back to an empty string below.
         }
 
@@ -860,7 +860,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                 if (is_string($label) && $label !== '') {
                     return $label;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Fall back to a humanized label below.
             }
         }
@@ -936,12 +936,12 @@ class PluginAlertsmanagerAlert extends CommonDBTM
                         $fields[$fieldId] = [
                             'id'    => $fieldId,
                             'label' => $finalLabel,
-                            'source'=> 'plugin_fields',
+                            'source' => 'plugin_fields',
                         ];
                     }
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             error_log('[AlertsManager] Error querying plugin Fields: ' . $e->getMessage());
         }
 

@@ -32,8 +32,8 @@ $fields = class_exists('PluginAlertsmanagerAlert')
 $q = trim($_GET['q'] ?? '');
 if ($q !== '') {
     $q_lower = strtolower($q);
-    $fields = array_filter($fields, function($f) use ($q_lower) {
-        return strpos(strtolower($f['label']), $q_lower) !== false 
+    $fields = array_filter($fields, function ($f) use ($q_lower) {
+        return strpos(strtolower($f['label']), $q_lower) !== false
             || strpos(strtolower($f['id']), $q_lower) !== false;
     });
 }
