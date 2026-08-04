@@ -9,10 +9,6 @@ parameters:
 
     paths:
         - ajax
-        - front
-        - inc
-        - hook.php
-        - setup.php
 
     bootstrapFiles:
         - ../../vendor/autoload.php
