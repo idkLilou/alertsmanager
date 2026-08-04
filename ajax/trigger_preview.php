@@ -4,16 +4,18 @@ if (!defined('GLPI_ROOT')) {
     include __DIR__ . '/../../../inc/includes.php';
 }
 
+require_once __DIR__ . '/../setup.php';
+
 header('Content-Type: application/json; charset=UTF-8');
 
 Session::checkLoginUser();
 if (!Session::haveRight('plugin_alertsmanager_alert', READ) && !Session::haveRight('config', READ)) {
-    http_response_code(403);
+    header('HTTP/1.1 403 Forbidden');
     echo json_encode([
         'success' => false,
         'error'   => 'Access denied',
     ]);
-    exit;
+    return;
 }
 
 require_once __DIR__ . '/../inc/alert.class.php';
@@ -21,22 +23,22 @@ require_once __DIR__ . '/../inc/alert_trigger_engine.class.php';
 
 $alertId = (int) ($_REQUEST['alert_id'] ?? 0);
 if ($alertId <= 0) {
-    http_response_code(400);
+    header('HTTP/1.1 400 Bad Request');
     echo json_encode([
         'success' => false,
         'error'   => 'Missing alert_id',
     ]);
-    exit;
+    return;
 }
 
 $alert = new PluginAlertsmanagerAlert();
 if (!$alert->getFromDB($alertId)) {
-    http_response_code(404);
+    header('HTTP/1.1 404 Not Found');
     echo json_encode([
         'success' => false,
         'error'   => 'Alert not found',
     ]);
-    exit;
+    return;
 }
 
 $result = $alert->getTriggerEvaluation();

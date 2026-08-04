@@ -42,7 +42,7 @@ class PluginAlertsmanagerProfile extends Profile
     public static function displayTabContentForItem(
         CommonGLPI $item,
         $tabnum = 1,
-        $withtemplate = 0
+        $withtemplate = 0,
     ) {
         if (!$item instanceof Profile || !self::canView()) {
             return false;

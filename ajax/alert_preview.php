@@ -39,11 +39,11 @@ header('Content-Type: text/html; charset=UTF-8');
 $subject = $_POST['mail_subject'] ?? '';
 $content = $_POST['mail_content'] ?? '';
 
-$safe_subject = htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTe, 'UTF-8');
+$safe_subject = htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
 // Build minimal preview HTML (content may contain HTML from tinymce)
 echo "<div class=\"plugin-alertsmanager-preview p-3 bg-light border rounded\">";
 echo "<div class=\"preview-subject h5 mb-2\">" . $safe_subject . "</div>";
 echo "<div class=\"preview-content\">" . $content . "</div>";
 echo "</div>";
-exit;
+return;

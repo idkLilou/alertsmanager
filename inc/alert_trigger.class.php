@@ -38,8 +38,8 @@ class PluginAlertsmanagerAlertTrigger extends CommonDBTM
     public static $rightname = 'plugin_alertsmanager_alert';
 
     // Trigger types
-    const TRIGGER_DATE_FIELD = 1;
-    const TRIGGER_FREQUENCY = 2;
+    public const TRIGGER_DATE_FIELD = 1;
+    public const TRIGGER_FREQUENCY = 2;
 
     public static function getTypeName($nb = 0)
     {
