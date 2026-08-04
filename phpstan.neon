@@ -14,6 +14,7 @@ parameters:
         - ../../vendor/autoload.php
         - ../../stubs/glpi_constants.php
         - setup.php
+        - inc/alert.class.php
 
     scanDirectories:
         - ../../inc
