@@ -352,7 +352,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return PluginAlertsmanagerAlertTriggerEngine::evaluateAlert((int) $this->fields['id'], $now);
     }
 
-    public function showForm(int $ID, array $options = []): bool
+    public function showForm($ID, array $options = [])
     {
         error_log('[AlertsManager] showForm() called with ID=' . $ID);
 
