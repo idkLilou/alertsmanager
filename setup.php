@@ -329,7 +329,7 @@ namespace {
     if (!class_exists('PluginFieldsContainer')) {
         class PluginFieldsContainer extends CommonDBTM
         {
-            public function find(array $criteria, string $orderBy = ''): array
+            public function find($condition = [], $order = [], $limit = null): array
             {
                 return [];
             }
@@ -339,7 +339,7 @@ namespace {
     if (!class_exists('PluginFieldsField')) {
         class PluginFieldsField extends CommonDBTM
         {
-            public function find(array $criteria, string $orderBy = ''): array
+            public function find($condition = [], $order = [], $limit = null): array
             {
                 return [];
             }
