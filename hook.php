@@ -28,7 +28,9 @@
  * -------------------------------------------------------------------------
  */
 
-function plugin_alertsmanager_install()
+require_once __DIR__ . '/setup.php';
+
+function plugin_alertsmanager_install(): bool
 {
     /** @var DBmysql $DB */
     global $DB;
@@ -176,7 +178,7 @@ function plugin_alertsmanager_install()
     return true;
 }
 
-function plugin_alertsmanager_uninstall()
+function plugin_alertsmanager_uninstall(): bool
 {
     /** @var DBmysql $DB */
     global $DB;
@@ -200,7 +202,7 @@ function plugin_alertsmanager_uninstall()
     return true;
 }
 
-function plugin_alertsmanager_getProfileRights()
+function plugin_alertsmanager_getProfileRights(): array
 {
     $rights = [
         PluginAlertsmanagerAlert::$rightname => [

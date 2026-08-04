@@ -31,6 +31,7 @@
 use Glpi\Event;
 
 require_once __DIR__ . '/../inc/alert_trigger.class.php';
+require_once __DIR__ . '/../setup.php';
 
 Session::checkLoginUser();
 
@@ -40,6 +41,9 @@ if (!isset($_GET['id'])) {
 
 $alert = new PluginAlertsmanagerAlert();
 
+/**
+ * @param array<string, mixed> $input
+ */
 function alertsmanager_save_trigger(int $alertId, array $input = []): void
 {
     /** @var DBmysql $DB */
@@ -80,8 +84,10 @@ function alertsmanager_save_trigger(int $alertId, array $input = []): void
 
 /**
  * Save target relations (users/groups/profiles)
+ *
+ * @return int[]
  */
-function alertsmanager_normalize_target_ids($values): array
+function alertsmanager_normalize_target_ids(mixed $values): array
 {
     if (!is_array($values)) {
         $values = [$values];
@@ -95,6 +101,10 @@ function alertsmanager_normalize_target_ids($values): array
     return array_values(array_unique($values));
 }
 
+/**
+ * @param array<string, mixed> $input
+ * @return array<string, array<int, int>>
+ */
 function alertsmanager_get_targets_by_type(array $input = []): array
 {
     $targetsByType = [
@@ -118,7 +128,10 @@ function alertsmanager_get_targets_by_type(array $input = []): array
     return $targetsByType;
 }
 
-function alertsmanager_save_targets(int $alertId, array $input = [])
+/**
+ * @param array<string, mixed> $input
+ */
+function alertsmanager_save_targets(int $alertId, array $input = []): void
 {
     /** @var DBmysql $DB */
     global $DB;

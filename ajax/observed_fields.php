@@ -11,11 +11,13 @@ if (!defined('GLPI_ROOT')) {
     include __DIR__ . '/../../../inc/includes.php';
 }
 
+require_once __DIR__ . '/../setup.php';
+
 if (!Session::haveRight('plugin_alertsmanager_alert', READ) && !Session::haveRight('config', READ)) {
     header('Content-Type: application/json; charset=utf-8');
-    http_response_code(403);
+    header('HTTP/1.1 403 Forbidden');
     echo json_encode([]);
-    exit;
+    return;
 }
 
 header('Content-Type: application/json; charset=utf-8');
@@ -39,4 +41,4 @@ if ($q !== '') {
 }
 
 echo json_encode(array_values($fields));
-exit;
+return;

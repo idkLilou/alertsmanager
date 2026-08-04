@@ -4,16 +4,18 @@ if (!defined('GLPI_ROOT')) {
     include __DIR__ . '/../../../inc/includes.php';
 }
 
+require_once __DIR__ . '/../setup.php';
+
 header('Content-Type: application/json; charset=utf-8');
 
 try {
-    error_log('[alertsmanager][targets] Request received. Type: ' . $_GET['target_type'] ?? 'NONE');
+    error_log('[alertsmanager][targets] Request received. Type: ' . ($_GET['target_type'] ?? 'NONE'));
 
     if (!Session::haveRight('plugin_alertsmanager_alert', READ) && !Session::haveRight('config', READ)) {
         error_log('[alertsmanager][targets] Access denied');
-        http_response_code(403);
+        header('HTTP/1.1 403 Forbidden');
         echo json_encode([]);
-        exit;
+        return;
     }
 
     // support as-you-type: q, limit
@@ -86,10 +88,10 @@ try {
 
     error_log('[alertsmanager][targets] Returning ' . count($results) . ' results for type: ' . $type);
     echo json_encode($results);
-    exit;
+    return;
 } catch (Throwable $e) {
     error_log('[alertsmanager][targets] ' . $e->getMessage());
-    http_response_code(500);
+    header('HTTP/1.1 500 Internal Server Error');
     echo json_encode(['error' => 'targets_failed']);
-    exit;
+    return;
 }

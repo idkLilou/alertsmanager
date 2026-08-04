@@ -38,6 +38,7 @@ use Glpi\Application\View\TemplateRenderer;
 require_once __DIR__ . '/alert_trigger_engine.class.php';
 require_once __DIR__ . '/alert_mailer.class.php';
 require_once __DIR__ . '/alert_target.class.php';
+require_once __DIR__ . '/../setup.php';
 
 class PluginAlertsmanagerAlert extends CommonDBTM
 {
@@ -120,7 +121,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return Session::haveRight(self::$rightname, UPDATE) || Session::haveRight('config', UPDATE);
     }
 
-    public static function cronInfo($name)
+    public static function cronInfo(string $name): array
     {
         return match ($name) {
             'runalerts' => [
@@ -351,7 +352,7 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         return PluginAlertsmanagerAlertTriggerEngine::evaluateAlert((int) $this->fields['id'], $now);
     }
 
-    public function showForm($ID, $options = [])
+    public function showForm(int $ID, array $options = []): bool
     {
         error_log('[AlertsManager] showForm() called with ID=' . $ID);
 
@@ -612,6 +613,11 @@ class PluginAlertsmanagerAlert extends CommonDBTM
         ksort($fields, SORT_STRING);
 
         return array_values($fields);
+    }
+
+    private static function getStandardDateFieldsFromItemtypes(): array
+    {
+        return [];
     }
 
     private static function getStandardDateFieldsFromInformationSchema(): array
