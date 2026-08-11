@@ -10,7 +10,7 @@ final class AlertTargetTest extends TestCase
     {
         global $DB;
 
-        $DB = new class () {
+        $DB = new class {
             /** @var array<int, array<string, mixed>> */
             public array $rows = [];
 
