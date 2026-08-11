@@ -62,4 +62,4 @@ jobs:
                   --no-progress
 
             - name: Run PHPUnit tests
-              uses: php-actions/phpunit@v4
+              run: vendor/bin/phpunit
