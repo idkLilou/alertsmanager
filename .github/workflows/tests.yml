@@ -1,0 +1,65 @@
+name: Tests# Nom du workflow affiché dans GitHub Actions
+
+# Déclencheurs du workflow
+on:
+    push: # Exécution à chaque création ou mise à jour d'une Pull Request
+    pull_request: # Déclenche le workflow sur les pushs vers n'importe quelle branche
+    workflow_dispatch: # Permet de lancer le workflow manuellement depuis GitHub
+
+# Permissions minimales nécessaires
+permissions:
+    contents: read # Lecture seule du dépôt
+
+# Empêche plusieurs exécutions du même workflow sur la même branche
+# Si un nouveau commit est poussé, l'ancien workflow est annulé
+concurrency:
+    group: "${{ github.workflow }}-${{ github.ref }}"
+    cancel-in-progress: true
+
+jobs:
+    unit-tests:
+        name: PHP Unit tests # Nom du job affiché dans GitHub Actions
+        runs-on: ubuntu-latest # Machine Ubuntu utilisée par GitHub
+        timeout-minutes: 15 # Arrête le workflow après 15 minutes
+
+        steps:
+            # Récupère le contenu du dépôt
+            - name: Checkout plugin
+              uses: actions/checkout@v7
+
+            # Installation de PHP et des extensions nécessaires
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: "8.2" # Version de PHP utilisée
+                  coverage: none # Désactive Xdebug (plus rapide)
+                  tools: composer:v2 # Installe Composer v2
+
+                  # Extensions PHP nécessaires au plugin
+                  extensions: >-
+                      bcmath,
+                      curl,
+                      dom,
+                      fileinfo,
+                      gd,
+                      intl,
+                      mbstring,
+                      mysqli,
+                      simplexml,
+                      xml,
+                      zip
+
+            # Vérifie que le fichier composer.json est valide
+            - name: Validate Composer configuration
+              run: composer validate --strict --no-check-publish
+
+            # Installe les dépendances du plugin
+            - name: Install plugin dependencies
+              run: >
+                  composer install
+                  --no-interaction
+                  --prefer-dist
+                  --no-progress
+
+            - name: Run PHPUnit tests
+              run: vendor/bin/phpunit
