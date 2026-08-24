@@ -1,4 +1,4 @@
-name: Tests# Nom du workflow affiché dans GitHub Actions
+name: Tests # Nom du workflow affiché dans GitHub Actions
 
 # Déclencheurs du workflow
 on:
